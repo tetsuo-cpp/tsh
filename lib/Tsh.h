@@ -1,3 +1,3 @@
 #pragma once
 
-void tsh();
+int tsh(int ArgC, char **ArgV);
