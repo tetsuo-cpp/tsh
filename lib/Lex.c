@@ -1,11 +1,14 @@
 #include "Lex.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 bool _tshLexGetChar(TshLex *L);
+bool _tshLexIsDelim(char C);
+void _tshLexGetIdentifier(TshLex *L, TshToken *T);
 
-void tshLexInit(TshLex *L, char *Buf, unsigned int BufSize) {
+void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize) {
   L->Buf = Buf;
   L->BufSize = BufSize;
   L->CurPos = 0;
@@ -13,8 +16,35 @@ void tshLexInit(TshLex *L, char *Buf, unsigned int BufSize) {
   _tshLexGetChar(L);
 }
 
+void tshLexGetToken(TshLex *L, TshToken *T) {
+  T->Buf = NULL;
+  while (isspace(L->CurChar) && _tshLexGetChar(L)) {
+  }
+  if (!L->Buf || L->CurPos >= L->BufSize) {
+    T->Kind = TK_EndOfFile;
+    return;
+  }
+  switch (L->CurChar) {
+  case '|':
+    T->Kind = TK_Pipe;
+    break;
+  case '>':
+    T->Kind = TK_Redir;
+    break;
+  case '\'':
+    T->Kind = TK_Quote;
+    break;
+  case '\"':
+    T->Kind = TK_DQuote;
+    break;
+  default:
+    _tshLexGetIdentifier(L, T);
+    return;
+  }
+  _tshLexGetChar(L);
+}
+
 void tshLexClose(TshLex *L) {
-  free(L->Buf);
   L->Buf = NULL;
   L->BufSize = 0;
   L->CurPos = 0;
@@ -37,39 +67,11 @@ bool _tshLexIsDelim(char C) {
   return false;
 }
 
-void _tshLexGetIdentifier(TshLex *L, TshLexToken *T) {
-  T->Kind = IDENTIFIER;
+void _tshLexGetIdentifier(TshLex *L, TshToken *T) {
+  T->Kind = TK_Identifier;
   T->Buf = &L->Buf[L->CurPos - 1];
-  T->BufSize = 0;
+  T->BufSize = 1;
   while (!_tshLexIsDelim(L->CurChar) && _tshLexGetChar(L)) {
     ++T->BufSize;
   }
-}
-
-void tshLexGetToken(TshLex *L, TshLexToken *T) {
-  T->Buf = NULL;
-  while (isspace(L->CurChar) && _tshLexGetChar(L)) {
-  }
-  if (!L->Buf || L->CurPos >= L->BufSize) {
-    T->Kind = END_OF_FILE;
-    return;
-  }
-  switch (L->CurChar) {
-  case '|':
-    T->Kind = PIPE;
-    break;
-  case '>':
-    T->Kind = REDIR;
-    break;
-  case '\'':
-    T->Kind = QUOTE;
-    break;
-  case '\"':
-    T->Kind = DQUOTE;
-    break;
-  default:
-    _tshLexGetIdentifier(L, T);
-    return;
-  }
-  _tshLexGetChar(L);
 }

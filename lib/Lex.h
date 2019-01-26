@@ -1,29 +1,27 @@
 #pragma once
 
-#include <stdbool.h>
-
 typedef struct {
-  char *Buf;
+  const char *Buf;
   unsigned int BufSize;
   unsigned int CurPos;
   char CurChar;
 } TshLex;
 
 typedef enum {
-  IDENTIFIER,
-  PIPE,
-  REDIR,
-  QUOTE,
-  DQUOTE,
-  END_OF_FILE
-} TshLexTokenKind;
+  TK_Identifier,
+  TK_Pipe,
+  TK_Redir,
+  TK_Quote,
+  TK_DQuote,
+  TK_EndOfFile
+} TshTokenKind;
 
 typedef struct {
-  TshLexTokenKind Kind;
-  char *Buf;
+  TshTokenKind Kind;
+  const char *Buf;
   unsigned int BufSize;
-} TshLexToken;
+} TshToken;
 
-void tshLexInit(TshLex *L, char *Buf, unsigned int BufSize);
+void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize);
+void tshLexGetToken(TshLex *L, TshToken *T);
 void tshLexClose(TshLex *L);
-void tshLexGetToken(TshLex *L, TshLexToken *T);

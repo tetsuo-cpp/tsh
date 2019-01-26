@@ -21,15 +21,17 @@ int tsh(int ArgC, char **ArgV) {
 
     // Lex into tokens.
     TshLex L;
-    TshLexToken T;
+    TshToken T;
     tshLexInit(&L, Buf, strlen(Buf));
     do {
       tshLexGetToken(&L, &T);
       printf("Got token of kind %d.\n", T.Kind);
-      if (T.Kind == IDENTIFIER)
-        printf("Value was %.*s\n", T.BufSize, T.Buf);
-    } while (T.Kind != END_OF_FILE);
+      if (T.Kind == TK_Identifier)
+        printf("Value was %.*s\n", T.BufSize - 1, T.Buf);
+    } while (T.Kind != TK_EndOfFile);
     tshLexClose(&L);
+
+    free(Buf);
   }
   return EXIT_SUCCESS;
 }
