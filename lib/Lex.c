@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-bool _tshLexGetChar(TshLex *L);
-bool _tshLexIsDelim(char C);
-void _tshLexGetIdentifier(TshLex *L, TshToken *T);
+bool _tshLexGetChar(TshLex *);
+bool _tshLexIsDelim(char);
+void _tshLexGetIdentifier(TshLex *, TshToken *);
 
 void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize) {
   L->Buf = Buf;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Command.h>
+#include <Cmd.h>
 #include <Lex.h>
 
 #include <stdbool.h>
@@ -8,11 +8,12 @@
 typedef struct {
   const TshToken *Tokens;
   unsigned int TokensSize;
-  TshToken CurTok;
-  TshCommand *Commands;
-  unsigned int CommandsSize;
+  unsigned int TokenPos;
+  const TshToken *CurTok;
+  TshCmd *Cmds;
+  unsigned int CmdsSize;
 } TshParse;
 
-void tshParseInit(TshParse *P, const TshToken *Tokens, unsigned int TokensSize);
-bool tshParseExec(TshParse *P);
-void tshParseClose(TshParse *P);
+void tshParseInit(TshParse *, const TshToken *, unsigned int);
+bool tshParseCmd(TshParse *);
+void tshParseClose(TshParse *);

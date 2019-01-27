@@ -22,6 +22,6 @@ typedef struct {
   unsigned int BufSize;
 } TshToken;
 
-void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize);
-void tshLexGetToken(TshLex *L, TshToken *T);
-void tshLexClose(TshLex *L);
+void tshLexInit(TshLex *, const char *, unsigned int);
+void tshLexGetToken(TshLex *, TshToken *);
+void tshLexClose(TshLex *);

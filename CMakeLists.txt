@@ -7,7 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror")
 
 set(
   TSH_SOURCE_FILES
-  lib/Command.c
+  lib/Cmd.c
   lib/Lex.c
   lib/Parse.c
   lib/Tsh.c
