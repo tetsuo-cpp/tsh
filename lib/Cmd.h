@@ -2,10 +2,11 @@
 
 #include <Lex.h>
 
+#include <klib/kvec.h>
+
 typedef struct {
   char *Cmd;
-  char **Args;
-  unsigned int ArgsSize;
+  kvec_t(char *) Args;
   TshTokenKind Op;
 } TshCmd;
 

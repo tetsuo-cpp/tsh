@@ -3,17 +3,18 @@
 #include <Cmd.h>
 #include <Lex.h>
 
+#include <klib/kvec.h>
+
 #include <stdbool.h>
 
+typedef kvec_t(TshToken) TshTokenVec;
+
 typedef struct {
-  const TshToken *Tokens;
-  unsigned int TokensSize;
+  TshTokenVec Tokens;
   unsigned int TokenPos;
   const TshToken *CurTok;
-  TshCmd *Cmds;
-  unsigned int CmdsSize;
 } TshParse;
 
-void tshParseInit(TshParse *, const TshToken *, unsigned int);
-bool tshParseCmd(TshParse *);
+void tshParseInit(TshParse *, TshTokenVec);
+bool tshParseCmd(TshParse *, TshCmd *);
 void tshParseClose(TshParse *);

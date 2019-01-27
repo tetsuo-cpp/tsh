@@ -15,4 +15,4 @@ set(
 )
 
 add_executable(tsh ${TSH_SOURCE_FILES})
-target_include_directories(tsh PRIVATE lib)
+target_include_directories(tsh PRIVATE lib external)

@@ -3,6 +3,8 @@
 #include <Lex.h>
 #include <Parse.h>
 
+#include <klib/kvec.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,35 +25,39 @@ int tsh(int ArgC, char **ArgV) {
     // Lex into tokens.
     TshLex L;
     TshToken T;
+    TshTokenVec Tokens;
     tshLexInit(&L, Buf, strlen(Buf));
-
-    unsigned int TCount = 0;
-    TshToken *Tokens = NULL;
+    kv_init(Tokens);
     do {
-      ++TCount;
-      Tokens = realloc(Tokens, sizeof(TshToken) * TCount);
-      TshToken *T = &Tokens[TCount - 1];
-      tshLexGetToken(&L, T);
-      printf("Got token of kind %d.\n", T->Kind);
-      if (T->Kind == TK_Identifier)
-        printf("Value was %.*s\n", T->BufSize - 1, T->Buf);
+      tshLexGetToken(&L, &T);
+      kv_push(TshToken, Tokens, T);
+      printf("Got token of kind %d.\n", T.Kind);
+      if (T.Kind == TK_Identifier)
+        printf("Value was %.*s\n", T.BufSize - 1, T.Buf);
     } while (T.Kind != TK_EndOfFile);
 
     TshParse P;
-    tshParseInit(&P, Tokens, TCount);
-    tshParseCmd(&P);
+    TshCmd C;
+    kvec_t(TshCmd) Cmds;
+    kv_init(Cmds);
+    tshParseInit(&P, Tokens);
+    while (tshParseCmd(&P, &C)) {
+      kv_push(TshCmd, Cmds, C);
+    }
 
-    // Print out the cmds.
-    for (unsigned int Index = 0; Index < P.CmdsSize; ++Index) {
-      const TshCmd *Cmd = &P.Cmds[Index];
-      printf("Printing Cmd %d with value %s.\n", Index, Cmd->Cmd);
-      for (unsigned int ArgIndex = 0; ArgIndex < Cmd->ArgsSize; ++ArgIndex) {
-        printf("Arg %d with value %s.\n", ArgIndex, Cmd->Args[ArgIndex]);
+    for (unsigned int Index = 0; Index < kv_size(Cmds); ++Index) {
+      const TshCmd *Cmd = &kv_A(Cmds, Index);
+      printf("Priting Cmd %d with value %s.\n", Index, Cmd->Cmd);
+      for (unsigned int ArgIndex = 0; ArgIndex < kv_size(Cmd->Args);
+           ++ArgIndex) {
+        printf("Arg %d with value %s.\n", ArgIndex, kv_A(Cmd->Args, ArgIndex));
       }
     }
 
     tshLexClose(&L);
     tshParseClose(&P);
+    kv_destroy(Tokens);
+    kv_destroy(Cmds);
     free(Buf);
   }
   return EXIT_SUCCESS;
