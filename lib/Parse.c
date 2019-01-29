@@ -8,6 +8,7 @@ bool _tshParseConsumeToken(TshParse *, TshTokenKind);
 void tshParseInit(TshParse *P, TshTokenVec Tokens) {
   P->Tokens = Tokens;
   P->TokenPos = 0;
+
   _tshParseReadToken(P);
 }
 

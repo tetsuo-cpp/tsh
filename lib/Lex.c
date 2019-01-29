@@ -79,6 +79,7 @@ void _tshLexGetIdentifier(TshLex *L, TshToken *T) {
   T->Kind = TK_Identifier;
   T->Buf = &L->Buf[L->CurPos - 1];
   T->BufSize = 1;
+
   while (_tshLexGetChar(L) && !_tshLexIsDelim(L->CurChar))
     ++T->BufSize;
 }

@@ -7,6 +7,8 @@
 typedef struct {
   kvec_t(char *) Args;
   TshTokenKind Op;
+  char *Buf;
+  unsigned int BufSize;
 } TshCmd;
 
 void tshCmdInit(TshCmd *);

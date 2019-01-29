@@ -42,25 +42,26 @@ int tsh(int ArgC, char **ArgV) {
     TshCmdVec Cmds;
     kv_init(Cmds);
     tshParseInit(&P, Tokens);
-    while (tshParseCmd(&P, &C)) {
+    while (tshParseCmd(&P, &C))
       kv_push(TshCmd, Cmds, C);
-    }
 
     for (unsigned int Index = 0; Index < kv_size(Cmds); ++Index) {
       const TshCmd *Cmd = &kv_A(Cmds, Index);
       printf("Printing Cmd %d with and op %d.\n", Index, Cmd->Op);
-      for (unsigned int ArgIndex = 0; ArgIndex < kv_size(Cmd->Args);
-           ++ArgIndex) {
+      for (unsigned int ArgIndex = 0; ArgIndex < kv_size(Cmd->Args); ++ArgIndex)
         printf("Arg %d with value %s.\n", ArgIndex, kv_A(Cmd->Args, ArgIndex));
-      }
     }
 
     TshEngine E;
     tshEngineInit(&E, Cmds);
     tshEngineExec(&E);
 
+    for (unsigned int Index = 0; Index < kv_size(Cmds); ++Index)
+      tshCmdClose(&kv_A(Cmds, Index));
+
     tshLexClose(&L);
     tshParseClose(&P);
+    tshEngineClose(&E);
     kv_destroy(Tokens);
     kv_destroy(Cmds);
     free(Buf);
