@@ -7,6 +7,8 @@
 
 #include <stdbool.h>
 
+struct TshCmd;
+
 typedef kvec_t(TshToken) TshTokenVec;
 
 typedef struct {
@@ -16,5 +18,5 @@ typedef struct {
 } TshParse;
 
 void tshParseInit(TshParse *, TshTokenVec);
-bool tshParseCmd(TshParse *, TshCmd *);
+TshCmd *tshParseCmd(TshParse *, TshCmd *);
 void tshParseClose(TshParse *);

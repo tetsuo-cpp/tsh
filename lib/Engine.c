@@ -1,12 +1,14 @@
 #include "Engine.h"
 
+#include <Util.h>
+
 #include <stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #define TSH_BUF_SIZE 1024
 
-int _tshEngineExecCmd(TshCmd *);
+static int _tshEngineExecCmd(TshCmd *);
 
 void tshEngineInit(TshEngine *E, TshCmdVec Cmds) {
   E->Cmds = Cmds;
@@ -15,15 +17,16 @@ void tshEngineInit(TshEngine *E, TshCmdVec Cmds) {
 
 void tshEngineExec(TshEngine *E) {
   // TODO: Implement ops.
-  for (unsigned int Index = 0; Index < kv_size(E->Cmds); ++Index) {
+  for (KV_FOREACH(Index, E->Cmds)) {
     TshCmd *C = &kv_A(E->Cmds, Index);
+    printf("Executing command %d\n", Index);
     _tshEngineExecCmd(C);
   }
 }
 
 void tshEngineClose(TshEngine *E) { E->CurPos = 0; }
 
-int _tshEngineExecCmd(TshCmd *Cmd) {
+static int _tshEngineExecCmd(TshCmd *Cmd) {
   pid_t Pid;
   int FD[2];
 
@@ -64,6 +67,7 @@ int _tshEngineExecCmd(TshCmd *Cmd) {
     Buf[BufOffset] = '\0';
     Cmd->Buf = Buf;
     Cmd->BufSize = BufOffset + 1;
+    printf("%s.\n", Cmd->Buf);
   }
 
   return 1;

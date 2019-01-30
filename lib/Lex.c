@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-bool _tshLexGetChar(TshLex *);
-bool _tshLexIsDelim(char);
-void _tshLexGetIdentifier(TshLex *, TshToken *);
+static bool _tshLexGetChar(TshLex *);
+static bool _tshLexIsDelim(char);
+static void _tshLexGetIdentifier(TshLex *, TshToken *);
 
 void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize) {
   L->Buf = Buf;
@@ -56,7 +56,7 @@ void tshLexClose(TshLex *L) {
   L->CurChar = 0;
 }
 
-bool _tshLexGetChar(TshLex *L) {
+static bool _tshLexGetChar(TshLex *L) {
   if (!L->Buf || L->CurPos >= L->BufSize)
     return false;
 
@@ -65,7 +65,7 @@ bool _tshLexGetChar(TshLex *L) {
   return true;
 }
 
-bool _tshLexIsDelim(char C) {
+static bool _tshLexIsDelim(char C) {
   if (isspace(C))
     return true;
 
@@ -75,7 +75,7 @@ bool _tshLexIsDelim(char C) {
   return false;
 }
 
-void _tshLexGetIdentifier(TshLex *L, TshToken *T) {
+static void _tshLexGetIdentifier(TshLex *L, TshToken *T) {
   T->Kind = TK_Identifier;
   T->Buf = &L->Buf[L->CurPos - 1];
   T->BufSize = 1;

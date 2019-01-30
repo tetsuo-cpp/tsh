@@ -1,9 +1,10 @@
 #include "Parse.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
-bool _tshParseReadToken(TshParse *);
-bool _tshParseConsumeToken(TshParse *, TshTokenKind);
+static bool _tshParseReadToken(TshParse *);
+static bool _tshParseConsumeToken(TshParse *, TshTokenKind);
 
 void tshParseInit(TshParse *P, TshTokenVec Tokens) {
   P->Tokens = Tokens;
@@ -12,11 +13,13 @@ void tshParseInit(TshParse *P, TshTokenVec Tokens) {
   _tshParseReadToken(P);
 }
 
-bool tshParseCmd(TshParse *P, TshCmd *Cmd) {
+TshCmd *tshParseCmd(TshParse *P, TshCmd *Prev) {
   if (!P->CurTok || P->CurTok->Kind == TK_EndOfFile)
-    return false;
+    return Prev;
 
+  TshCmd *Cmd = malloc(sizeof(TshCmd));
   tshCmdInit(Cmd);
+
   const TshToken *T = P->CurTok;
   if (_tshParseConsumeToken(P, TK_Identifier)) {
     tshCmdAddArg(Cmd, T->Buf, T->BufSize);
@@ -27,12 +30,17 @@ bool tshParseCmd(TshParse *P, TshCmd *Cmd) {
       T = P->CurTok;
     }
 
-    Cmd->Op = P->CurTok->Kind;
-    _tshParseReadToken(P);
-    return true;
+    return tshParseCmd(P, Cmd);
+  } else if (_tshParseConsumeToken(P, TK_Pipe) ||
+             _tshParseConsumeToken(P, TK_Redir)) {
+    Cmd->Op = T->Kind;
+    Cmd->Left = Prev;
+    Cmd->Right = tshParseCmd(P, Cmd);
+    return Cmd;
+  } else {
+    printf("Unrecognised token kind.\n");
+    return NULL;
   }
-
-  return false;
 }
 
 void tshParseClose(TshParse *P) {
@@ -40,7 +48,7 @@ void tshParseClose(TshParse *P) {
   P->CurTok = NULL;
 }
 
-bool _tshParseReadToken(TshParse *P) {
+static bool _tshParseReadToken(TshParse *P) {
   if (P->TokenPos >= kv_size(P->Tokens)) {
     P->CurTok = NULL;
     return false;
@@ -51,7 +59,7 @@ bool _tshParseReadToken(TshParse *P) {
   return true;
 }
 
-bool _tshParseConsumeToken(TshParse *P, TshTokenKind Kind) {
+static bool _tshParseConsumeToken(TshParse *P, TshTokenKind Kind) {
   if (P->CurTok && P->CurTok->Kind == Kind) {
     _tshParseReadToken(P);
     return true;

@@ -13,7 +13,8 @@ typedef enum {
   TK_Redir,
   TK_Quote,
   TK_DQuote,
-  TK_EndOfFile
+  TK_EndOfFile,
+  TK_None
 } TshTokenKind;
 
 typedef struct {
