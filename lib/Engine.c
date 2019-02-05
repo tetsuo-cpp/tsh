@@ -10,36 +10,56 @@
 
 static int _tshEngineExecCmd(TshCmd *);
 
-void tshEngineInit(TshEngine *E, TshCmdVec Cmds) {
-  E->Cmds = Cmds;
-  E->CurPos = 0;
-}
+void tshEngineExec(TshCmd *Cmd) {
+  if (Cmd->Op == TK_None) {
+    _tshEngineExecCmd(Cmd);
+    return;
+  }
 
-void tshEngineExec(TshEngine *E) {
-  // TODO: Implement ops.
-  for (KV_FOREACH(Index, E->Cmds)) {
-    TshCmd *C = &kv_A(E->Cmds, Index);
-    printf("Executing command %d\n", Index);
-    _tshEngineExecCmd(C);
+  switch (Cmd->Op) {
+  case TK_Pipe:
+    printf("Executing pipe.\n");
+    tshEngineExec(Cmd->Left);
+
+    // Pipe left cmd's stdout to right cmd's stdin.
+    Cmd->Right->In = Cmd->Left->Out;
+    Cmd->Right->InSize = Cmd->Left->OutSize;
+
+    tshEngineExec(Cmd->Right);
+    break;
+  default:
+    printf("Unrecognised operator.");
   }
 }
 
-void tshEngineClose(TshEngine *E) { E->CurPos = 0; }
-
 static int _tshEngineExecCmd(TshCmd *Cmd) {
-  pid_t Pid;
-  int FD[2];
+  printf("Executing cmd %s.\n", kv_A(Cmd->Args, 0));
 
-  pipe(FD);
+  pid_t Pid;
+  int CmdRead[2];
+  int CmdWrite[2];
+
+  // Open two pipes.
+  // CmdRead is for the shell to read the child's stdout.
+  // CmdWrite is for the shell to write to the child's stdin.
+  pipe(CmdRead);
+  pipe(CmdWrite);
+
   Pid = fork();
   if (Pid == 0) {
+    close(CmdWrite[1]);
+
     // Close reader.
-    close(FD[0]);
+    if (Cmd->In)
+      dup2(CmdWrite[0], STDIN_FILENO);
+
+    close(CmdWrite[0]);
+    close(CmdRead[0]);
 
     // Redir stdout and stderr to pipe and close writer.
-    dup2(FD[1], 1);
-    dup2(FD[1], 2);
-    close(FD[1]);
+    dup2(CmdRead[1], 1);
+    dup2(CmdRead[1], 2);
+    close(CmdRead[1]);
 
     kv_push(char *, Cmd->Args, NULL);
     if (execvp(kv_A(Cmd->Args, 0), Cmd->Args.a) == -1)
@@ -49,13 +69,21 @@ static int _tshEngineExecCmd(TshCmd *Cmd) {
   } else if (Pid < 0) {
     perror("tsh");
   } else {
-    close(FD[1]);
+    close(CmdRead[1]);
+    close(CmdWrite[0]);
+
+    // If we have some stdin value to pipe into the current cmd.
+    if (Cmd->In)
+      write(CmdWrite[1], Cmd->In, Cmd->InSize);
+
+    // Close writer.
+    close(CmdWrite[1]);
 
     unsigned int BufSize = sizeof(char) * TSH_BUF_SIZE;
     char *Buf = malloc(BufSize);
     unsigned int BufOffset = 0;
     while (1) {
-      unsigned int AmtRead = read(FD[0], Buf + BufOffset, TSH_BUF_SIZE);
+      unsigned int AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_SIZE);
       if (AmtRead == 0)
         break;
 
@@ -65,9 +93,9 @@ static int _tshEngineExecCmd(TshCmd *Cmd) {
     }
 
     Buf[BufOffset] = '\0';
-    Cmd->Buf = Buf;
-    Cmd->BufSize = BufOffset + 1;
-    printf("%s.\n", Cmd->Buf);
+    Cmd->Out = Buf;
+    Cmd->OutSize = BufOffset + 1;
+    printf("%s.\n", Cmd->Out);
   }
 
   return 1;

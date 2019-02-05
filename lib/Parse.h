@@ -5,10 +5,6 @@
 
 #include <klib/kvec.h>
 
-#include <stdbool.h>
-
-struct TshCmd;
-
 typedef kvec_t(TshToken) TshTokenVec;
 
 typedef struct {
@@ -18,5 +14,5 @@ typedef struct {
 } TshParse;
 
 void tshParseInit(TshParse *, TshTokenVec);
-TshCmd *tshParseCmd(TshParse *, TshCmd *);
+TshCmd *tshParseCmd(TshParse *);
 void tshParseClose(TshParse *);

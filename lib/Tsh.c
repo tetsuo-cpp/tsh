@@ -45,17 +45,15 @@ int tsh(int ArgC, char **ArgV) {
 
     TshParse P;
     tshParseInit(&P, Tokens);
-    TshCmd *C = tshParseCmd(&P, NULL);
-    tshCmdPrint(C);
+    TshCmd *C = tshParseCmd(&P);
+    if (!C)
+      break;
 
-    TshEngine E;
-    // tshEngineInit(&E, Cmds);
-    // tshEngineExec(&E);
+    tshEngineExec(C);
 
     tshCmdClose(C);
     tshLexClose(&L);
     tshParseClose(&P);
-    tshEngineClose(&E);
     kv_destroy(Tokens);
     free(Buf);
   }

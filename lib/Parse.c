@@ -1,10 +1,12 @@
 #include "Parse.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 static bool _tshParseReadToken(TshParse *);
 static bool _tshParseConsumeToken(TshParse *, TshTokenKind);
+static TshCmd *_tshParseCmdImpl(TshParse *, TshCmd *);
 
 void tshParseInit(TshParse *P, TshTokenVec Tokens) {
   P->Tokens = Tokens;
@@ -13,35 +15,7 @@ void tshParseInit(TshParse *P, TshTokenVec Tokens) {
   _tshParseReadToken(P);
 }
 
-TshCmd *tshParseCmd(TshParse *P, TshCmd *Prev) {
-  if (!P->CurTok || P->CurTok->Kind == TK_EndOfFile)
-    return Prev;
-
-  TshCmd *Cmd = malloc(sizeof(TshCmd));
-  tshCmdInit(Cmd);
-
-  const TshToken *T = P->CurTok;
-  if (_tshParseConsumeToken(P, TK_Identifier)) {
-    tshCmdAddArg(Cmd, T->Buf, T->BufSize);
-    T = P->CurTok;
-
-    while (_tshParseConsumeToken(P, TK_Identifier)) {
-      tshCmdAddArg(Cmd, T->Buf, T->BufSize);
-      T = P->CurTok;
-    }
-
-    return tshParseCmd(P, Cmd);
-  } else if (_tshParseConsumeToken(P, TK_Pipe) ||
-             _tshParseConsumeToken(P, TK_Redir)) {
-    Cmd->Op = T->Kind;
-    Cmd->Left = Prev;
-    Cmd->Right = tshParseCmd(P, Cmd);
-    return Cmd;
-  } else {
-    printf("Unrecognised token kind.\n");
-    return NULL;
-  }
-}
+TshCmd *tshParseCmd(TshParse *P) { return _tshParseCmdImpl(P, NULL); }
 
 void tshParseClose(TshParse *P) {
   P->TokenPos = 0;
@@ -66,4 +40,34 @@ static bool _tshParseConsumeToken(TshParse *P, TshTokenKind Kind) {
   }
 
   return false;
+}
+
+static TshCmd *_tshParseCmdImpl(TshParse *P, TshCmd *Prev) {
+  if (!P->CurTok || P->CurTok->Kind == TK_EndOfFile)
+    return Prev;
+
+  TshCmd *Cmd = malloc(sizeof(TshCmd));
+  tshCmdInit(Cmd);
+
+  const TshToken *T = P->CurTok;
+  if (_tshParseConsumeToken(P, TK_Identifier)) {
+    tshCmdAddArg(Cmd, T->Buf, T->BufSize);
+    T = P->CurTok;
+
+    while (_tshParseConsumeToken(P, TK_Identifier)) {
+      tshCmdAddArg(Cmd, T->Buf, T->BufSize);
+      T = P->CurTok;
+    }
+
+    return _tshParseCmdImpl(P, Cmd);
+  } else if (_tshParseConsumeToken(P, TK_Pipe) ||
+             _tshParseConsumeToken(P, TK_Redir)) {
+    Cmd->Op = T->Kind;
+    Cmd->Left = Prev;
+    Cmd->Right = _tshParseCmdImpl(P, Cmd);
+    return Cmd;
+  } else {
+    printf("Unrecognised token kind.\n");
+    return NULL;
+  }
 }

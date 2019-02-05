@@ -9,8 +9,10 @@
 void tshCmdInit(TshCmd *C) {
   kv_init(C->Args);
   C->Op = TK_None;
-  C->Buf = NULL;
-  C->BufSize = 0;
+  C->Out = NULL;
+  C->OutSize = 0;
+  C->In = NULL;
+  C->InSize = 0;
   C->Left = NULL;
   C->Right = NULL;
 }
@@ -34,25 +36,15 @@ void tshCmdClose(TshCmd *C) {
 
   kv_destroy(C->Args);
   C->Op = TK_None;
-  free(C->Buf);
-  C->Buf = NULL;
-  C->BufSize = 0;
+
+  // Free stdout buf.
+  free(C->Out);
+  C->Out = NULL;
+  C->OutSize = 0;
+
+  // Don't free stdin since this belongs to another cmd.
+  C->In = NULL;
+  C->InSize = 0;
+
   free(C);
-}
-
-void tshCmdPrint(TshCmd *C) {
-  if (!C)
-    return;
-
-  if (C->Op == TK_None) {
-    printf("Command node: %s\n", kv_A(C->Args, 0));
-  } else {
-    printf("Op node: %d\n", C->Op);
-
-    printf("Walking left node:\n");
-    tshCmdPrint(C->Left);
-
-    printf("Walking right node:\n");
-    tshCmdPrint(C->Right);
-  }
 }
