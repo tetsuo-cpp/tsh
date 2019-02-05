@@ -9,23 +9,19 @@
 #define TSH_BUF_SIZE 1024
 
 static int _tshEngineExecCmd(TshCmd *);
+static void _tshEngineExecPipe(TshCmd *, TshCmd *);
+static void _tshEngineExecRedir(TshCmd *, TshCmd *);
 
 void tshEngineExec(TshCmd *Cmd) {
-  if (Cmd->Op == TK_None) {
-    _tshEngineExecCmd(Cmd);
-    return;
-  }
-
   switch (Cmd->Op) {
+  case TK_None:
+    _tshEngineExecCmd(Cmd);
+    break;
   case TK_Pipe:
-    printf("Executing pipe.\n");
-    tshEngineExec(Cmd->Left);
-
-    // Pipe left cmd's stdout to right cmd's stdin.
-    Cmd->Right->In = Cmd->Left->Out;
-    Cmd->Right->InSize = Cmd->Left->OutSize;
-
-    tshEngineExec(Cmd->Right);
+    _tshEngineExecPipe(Cmd->Left, Cmd->Right);
+    break;
+  case TK_Redir:
+    _tshEngineExecRedir(Cmd->Left, Cmd->Right);
     break;
   default:
     printf("Unrecognised operator.");
@@ -99,4 +95,31 @@ static int _tshEngineExecCmd(TshCmd *Cmd) {
   }
 
   return 1;
+}
+
+static void _tshEngineExecPipe(TshCmd *Left, TshCmd *Right) {
+  printf("Executing pipe.\n");
+  tshEngineExec(Left);
+
+  if (!Left->Out)
+    return;
+
+  // Pipe left cmd's stdout to right cmd's stdin.
+  Right->In = Left->Out;
+  Right->InSize = Left->OutSize;
+
+  tshEngineExec(Right);
+}
+
+static void _tshEngineExecRedir(TshCmd *Left, TshCmd *Right) {
+  printf("Executing redir.");
+
+  tshEngineExec(Left);
+
+  if (kv_size(Right->Args) != 1)
+    return;
+
+  FILE *RedirF = fopen(kv_A(Right->Args, 0), "w");
+  fwrite(Left->Out, sizeof(char), Left->OutSize, RedirF);
+  fclose(RedirF);
 }
