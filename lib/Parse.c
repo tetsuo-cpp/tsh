@@ -65,6 +65,7 @@ static TshCmd *_tshParseCmdImpl(TshParse *P, TshCmd *Prev) {
     Cmd->Op = T->Kind;
     Cmd->Left = Prev;
     Cmd->Right = _tshParseCmdImpl(P, Cmd);
+
     return Cmd;
   } else {
     printf("Unrecognised token kind.\n");

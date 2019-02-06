@@ -7,6 +7,7 @@
 static bool _tshLexGetChar(TshLex *);
 static bool _tshLexIsDelim(char);
 static void _tshLexGetIdentifier(TshLex *, TshToken *);
+static void _tshLexGetIdentifierUntilQuote(TshLex *, TshToken *, char);
 
 void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize) {
   L->Buf = Buf;
@@ -36,10 +37,8 @@ void tshLexGetToken(TshLex *L, TshToken *T) {
     T->Kind = TK_Redir;
     break;
   case '\'':
-    T->Kind = TK_Quote;
-    break;
   case '\"':
-    T->Kind = TK_DQuote;
+    _tshLexGetIdentifierUntilQuote(L, T, L->CurChar);
     break;
   default:
     _tshLexGetIdentifier(L, T);
@@ -81,5 +80,14 @@ static void _tshLexGetIdentifier(TshLex *L, TshToken *T) {
   T->BufSize = 1;
 
   while (_tshLexGetChar(L) && !_tshLexIsDelim(L->CurChar))
+    ++T->BufSize;
+}
+
+static void _tshLexGetIdentifierUntilQuote(TshLex *L, TshToken *T, char QChar) {
+  T->Kind = TK_Identifier;
+  T->Buf = &L->Buf[L->CurPos];
+  T->BufSize = 0;
+
+  while (_tshLexGetChar(L) && L->CurChar != QChar)
     ++T->BufSize;
 }

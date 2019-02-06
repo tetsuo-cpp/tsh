@@ -113,7 +113,6 @@ static void _tshEngineExecPipe(TshCmd *Left, TshCmd *Right) {
 
 static void _tshEngineExecRedir(TshCmd *Left, TshCmd *Right) {
   printf("Executing redir.");
-
   tshEngineExec(Left);
 
   if (kv_size(Right->Args) != 1)
