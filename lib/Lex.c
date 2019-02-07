@@ -36,6 +36,9 @@ void tshLexGetToken(TshLex *L, TshToken *T) {
   case '>':
     T->Kind = TK_Redir;
     break;
+  case '<':
+    T->Kind = TK_ReverseRedir;
+    break;
   case '\'':
   case '\"':
     _tshLexGetIdentifierUntilQuote(L, T, L->CurChar);

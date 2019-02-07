@@ -11,6 +11,7 @@
 static int _tshEngineExecCmd(TshCmd *);
 static void _tshEngineExecPipe(TshCmd *, TshCmd *);
 static void _tshEngineExecRedir(TshCmd *, TshCmd *);
+static void _tshEngineExecReverseRedir(TshCmd *, TshCmd *);
 
 void tshEngineExec(TshCmd *Cmd) {
   switch (Cmd->Op) {
@@ -22,6 +23,9 @@ void tshEngineExec(TshCmd *Cmd) {
     break;
   case TK_Redir:
     _tshEngineExecRedir(Cmd->Left, Cmd->Right);
+    break;
+  case TK_ReverseRedir:
+    _tshEngineExecReverseRedir(Cmd->Left, Cmd->Right);
     break;
   default:
     printf("Unrecognised operator.");
@@ -112,7 +116,7 @@ static void _tshEngineExecPipe(TshCmd *Left, TshCmd *Right) {
 }
 
 static void _tshEngineExecRedir(TshCmd *Left, TshCmd *Right) {
-  printf("Executing redir.");
+  printf("Executing redir.\n");
   tshEngineExec(Left);
 
   if (kv_size(Right->Args) != 1)
@@ -121,4 +125,30 @@ static void _tshEngineExecRedir(TshCmd *Left, TshCmd *Right) {
   FILE *RedirF = fopen(kv_A(Right->Args, 0), "w");
   fwrite(Left->Out, sizeof(char), Left->OutSize, RedirF);
   fclose(RedirF);
+}
+
+static void _tshEngineExecReverseRedir(TshCmd *Left, TshCmd *Right) {
+  printf("Executing reverse redir.\n");
+  if (kv_size(Right->Args) != 1)
+    return;
+
+  FILE *RedirF = fopen(kv_A(Right->Args, 0), "r");
+
+  // Figure out file length.
+  fseek(RedirF, 0, SEEK_END);
+  size_t Length = ftell(RedirF);
+  rewind(RedirF);
+
+  // Read entire file.
+  char *Buf = malloc(sizeof(char) * (Length + 1));
+  fread(Buf, sizeof(char), Length, RedirF);
+  fclose(RedirF);
+
+  Buf[Length] = '\0';
+  Right->Out = Buf;
+  Right->OutSize = Length;
+
+  Left->In = Buf;
+  Left->InSize = Length;
+  tshEngineExec(Left);
 }

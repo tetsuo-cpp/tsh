@@ -11,6 +11,7 @@ typedef enum {
   TK_Identifier,
   TK_Pipe,
   TK_Redir,
+  TK_ReverseRedir,
   TK_EndOfFile,
   TK_None
 } TshTokenKind;

@@ -61,7 +61,8 @@ static TshCmd *_tshParseCmdImpl(TshParse *P, TshCmd *Prev) {
 
     return _tshParseCmdImpl(P, Cmd);
   } else if (_tshParseConsumeToken(P, TK_Pipe) ||
-             _tshParseConsumeToken(P, TK_Redir)) {
+             _tshParseConsumeToken(P, TK_Redir) ||
+             _tshParseConsumeToken(P, TK_ReverseRedir)) {
     Cmd->Op = T->Kind;
     Cmd->Left = Prev;
     Cmd->Right = _tshParseCmdImpl(P, Cmd);
