@@ -2,14 +2,13 @@
 
 #include <ctype.h>
 #include <stdbool.h>
-#include <stdlib.h>
 
 static bool _tshLexGetChar(TshLex *);
 static bool _tshLexIsDelim(char);
 static void _tshLexGetIdentifier(TshLex *, TshToken *);
 static void _tshLexGetIdentifierUntilQuote(TshLex *, TshToken *, char);
 
-void tshLexInit(TshLex *L, const char *Buf, unsigned int BufSize) {
+void tshLexInit(TshLex *L, const char *Buf, size_t BufSize) {
   L->Buf = Buf;
   L->BufSize = BufSize;
   L->CurPos = 0;

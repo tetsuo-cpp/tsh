@@ -10,13 +10,13 @@ struct TshCmd {
   kvec_t(char *) Args;
   TshTokenKind Op;
   char *Out;
-  unsigned int OutSize;
+  size_t OutSize;
   char *In;
-  unsigned int InSize;
+  size_t InSize;
   TshCmd *Left;
   TshCmd *Right;
 };
 
 void tshCmdInit(TshCmd *);
-void tshCmdAddArg(TshCmd *, const char *, unsigned int);
+void tshCmdAddArg(TshCmd *, const char *, size_t);
 void tshCmdClose(TshCmd *);

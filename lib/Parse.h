@@ -9,7 +9,7 @@ typedef kvec_t(TshToken) TshTokenVec;
 
 typedef struct {
   TshTokenVec Tokens;
-  unsigned int TokenPos;
+  size_t TokenPos;
   const TshToken *CurTok;
 } TshParse;
 

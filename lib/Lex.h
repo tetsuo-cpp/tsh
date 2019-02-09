@@ -1,9 +1,11 @@
 #pragma once
 
+#include <stdlib.h>
+
 typedef struct {
   const char *Buf;
-  unsigned int BufSize;
-  unsigned int CurPos;
+  size_t BufSize;
+  size_t CurPos;
   char CurChar;
 } TshLex;
 
@@ -19,9 +21,9 @@ typedef enum {
 typedef struct {
   TshTokenKind Kind;
   const char *Buf;
-  unsigned int BufSize;
+  size_t BufSize;
 } TshToken;
 
-void tshLexInit(TshLex *, const char *, unsigned int);
+void tshLexInit(TshLex *, const char *, size_t);
 void tshLexGetToken(TshLex *, TshToken *);
 void tshLexClose(TshLex *);

@@ -79,11 +79,11 @@ static int _tshEngineExecCmd(TshCmd *Cmd) {
     // Close writer.
     close(CmdWrite[1]);
 
-    unsigned int BufSize = sizeof(char) * TSH_BUF_SIZE;
+    size_t BufSize = sizeof(char) * TSH_BUF_SIZE;
     char *Buf = malloc(BufSize);
-    unsigned int BufOffset = 0;
+    size_t BufOffset = 0;
     while (1) {
-      unsigned int AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_SIZE);
+      size_t AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_SIZE);
       if (AmtRead == 0)
         break;
 
@@ -150,5 +150,6 @@ static void _tshEngineExecReverseRedir(TshCmd *Left, TshCmd *Right) {
 
   Left->In = Buf;
   Left->InSize = Length;
+
   tshEngineExec(Left);
 }

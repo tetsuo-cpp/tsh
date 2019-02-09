@@ -3,6 +3,7 @@
 #include <Engine.h>
 #include <Lex.h>
 #include <Parse.h>
+#include <Prompt.h>
 #include <Util.h>
 
 #include <klib/kvec.h>
@@ -19,16 +20,14 @@ int tsh(int ArgC, char **ArgV) {
   int Status = 1;
   while (Status) {
     // Read input.
-    char *Buf = NULL;
-    size_t BufSize = 0;
-    printf("> ");
-    getline(&Buf, &BufSize, stdin);
+    char *Buf = tshPrompt();
+    size_t BufSize = strlen(Buf);
 
     // Lex into tokens.
     TshLex L;
     TshToken T;
     TshTokenVec Tokens;
-    tshLexInit(&L, Buf, strlen(Buf));
+    tshLexInit(&L, Buf, BufSize);
     kv_init(Tokens);
 
     while (1) {
@@ -37,7 +36,7 @@ int tsh(int ArgC, char **ArgV) {
       printf("Got token of kind %d.\n", T.Kind);
 
       if (T.Kind == TK_Identifier)
-        printf("Value was %.*s\n", T.BufSize, T.Buf);
+        printf("Value was %.*s\n", (int)T.BufSize, T.Buf);
 
       if (T.Kind == TK_EndOfFile)
         break;

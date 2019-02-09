@@ -17,7 +17,7 @@ void tshCmdInit(TshCmd *C) {
   C->Right = NULL;
 }
 
-void tshCmdAddArg(TshCmd *C, const char *Buf, unsigned int BufSize) {
+void tshCmdAddArg(TshCmd *C, const char *Buf, size_t BufSize) {
   char *Arg = malloc(sizeof(char) * (BufSize + 1));
   strncpy(Arg, Buf, BufSize);
   Arg[BufSize] = '\0';

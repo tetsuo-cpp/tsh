@@ -11,9 +11,11 @@ set(
   lib/Engine.c
   lib/Lex.c
   lib/Parse.c
+  lib/Prompt.c
   lib/Tsh.c
   src/main.c
 )
 
 add_executable(tsh ${TSH_SOURCE_FILES})
 target_include_directories(tsh PRIVATE lib external)
+target_link_libraries(tsh readline)
