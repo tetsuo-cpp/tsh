@@ -57,6 +57,23 @@ void tshLexClose(TshLex *L) {
   L->CurChar = 0;
 }
 
+const char *tshTokenKindToString(TshTokenKind Kind) {
+  switch (Kind) {
+  case TK_Identifier:
+    return "Identifier";
+  case TK_Pipe:
+    return "Pipe";
+  case TK_Redir:
+    return "Redir";
+  case TK_ReverseRedir:
+    return "ReverseRedir";
+  case TK_EndOfFile:
+    return "EndOfFile";
+  case TK_None:
+    return "None";
+  }
+}
+
 static bool _tshLexGetChar(TshLex *L) {
   if (!L->Buf || L->CurPos >= L->BufSize)
     return false;

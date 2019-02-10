@@ -2,4 +2,4 @@
 
 #include <Cmd.h>
 
-void tshEngineExec(TshCmd *);
+int tshEngineExec(TshCmd *);

@@ -6,34 +6,46 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define TSH_BUF_SIZE 1024
+#define TSH_BUF_INCREMENT 1024
 
 static int _tshEngineExecCmd(TshCmd *);
-static void _tshEngineExecPipe(TshCmd *, TshCmd *);
-static void _tshEngineExecRedir(TshCmd *, TshCmd *);
-static void _tshEngineExecReverseRedir(TshCmd *, TshCmd *);
+static int _tshEngineExecPipe(TshCmd *, TshCmd *);
+static int _tshEngineExecRedir(TshCmd *, TshCmd *);
+static int _tshEngineExecReverseRedir(TshCmd *, TshCmd *);
 
-void tshEngineExec(TshCmd *Cmd) {
+int tshEngineExec(TshCmd *Cmd) {
   switch (Cmd->Op) {
   case TK_None:
-    _tshEngineExecCmd(Cmd);
+    return _tshEngineExecCmd(Cmd);
     break;
   case TK_Pipe:
-    _tshEngineExecPipe(Cmd->Left, Cmd->Right);
+    return _tshEngineExecPipe(Cmd->Left, Cmd->Right);
     break;
   case TK_Redir:
-    _tshEngineExecRedir(Cmd->Left, Cmd->Right);
+    return _tshEngineExecRedir(Cmd->Left, Cmd->Right);
     break;
   case TK_ReverseRedir:
-    _tshEngineExecReverseRedir(Cmd->Left, Cmd->Right);
+    return _tshEngineExecReverseRedir(Cmd->Left, Cmd->Right);
     break;
   default:
-    printf("Unrecognised operator.");
+    return -1;
   }
 }
 
 static int _tshEngineExecCmd(TshCmd *Cmd) {
-  printf("Executing cmd %s.\n", kv_A(Cmd->Args, 0));
+#ifndef NDEBUG
+  printf("tsh: executing cmd. Cmd=%s Args=[", kv_A(Cmd->Args, 0));
+  for (KV_FOREACH(Index, Cmd->Args)) {
+    if (Index == 0)
+      continue;
+    if (Index != 1)
+      printf(", ");
+
+    printf("%s", kv_A(Cmd->Args, Index));
+  }
+
+  printf("]\n");
+#endif
 
   pid_t Pid;
   int CmdRead[2];
@@ -66,8 +78,6 @@ static int _tshEngineExecCmd(TshCmd *Cmd) {
       perror("tsh");
 
     exit(EXIT_FAILURE);
-  } else if (Pid < 0) {
-    perror("tsh");
   } else {
     close(CmdRead[1]);
     close(CmdWrite[0]);
@@ -79,60 +89,85 @@ static int _tshEngineExecCmd(TshCmd *Cmd) {
     // Close writer.
     close(CmdWrite[1]);
 
-    size_t BufSize = sizeof(char) * TSH_BUF_SIZE;
+    size_t BufSize = sizeof(char) * TSH_BUF_INCREMENT;
     char *Buf = malloc(BufSize);
+    if (!Buf)
+      return -1;
+
     size_t BufOffset = 0;
     while (1) {
-      size_t AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_SIZE);
+      ssize_t AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_INCREMENT);
       if (AmtRead == 0)
         break;
 
-      BufSize += sizeof(char) * TSH_BUF_SIZE;
+      BufSize += sizeof(char) * TSH_BUF_INCREMENT;
       Buf = realloc(Buf, BufSize);
+      if (!Buf)
+        return -1;
+
       BufOffset += AmtRead;
     }
 
     Buf[BufOffset] = '\0';
     Cmd->Out = Buf;
     Cmd->OutSize = BufOffset + 1;
-    printf("%s.\n", Cmd->Out);
+    printf("%s", Cmd->Out);
   }
 
-  return 1;
+  return 0;
 }
 
-static void _tshEngineExecPipe(TshCmd *Left, TshCmd *Right) {
-  printf("Executing pipe.\n");
-  tshEngineExec(Left);
+static int _tshEngineExecPipe(TshCmd *Left, TshCmd *Right) {
+#ifndef NDEBUG
+  printf("tsh: executing pipe.\n");
+#endif
+
+  TSH_RET(tshEngineExec(Left));
 
   if (!Left->Out)
-    return;
+    return -1;
 
   // Pipe left cmd's stdout to right cmd's stdin.
   Right->In = Left->Out;
   Right->InSize = Left->OutSize;
 
   tshEngineExec(Right);
+  return 0;
 }
 
-static void _tshEngineExecRedir(TshCmd *Left, TshCmd *Right) {
-  printf("Executing redir.\n");
-  tshEngineExec(Left);
+static int _tshEngineExecRedir(TshCmd *Left, TshCmd *Right) {
+#ifndef NDEBUG
+  printf("tsh: executing redir.\n");
+#endif
+
+  TSH_RET(tshEngineExec(Left));
 
   if (kv_size(Right->Args) != 1)
-    return;
+    return -1;
 
   FILE *RedirF = fopen(kv_A(Right->Args, 0), "w");
-  fwrite(Left->Out, sizeof(char), Left->OutSize, RedirF);
+  if (!RedirF)
+    return -1;
+
+  size_t Written = fwrite(Left->Out, sizeof(char), Left->OutSize, RedirF);
   fclose(RedirF);
+  if (Written == 0)
+    return -1;
+
+  return 0;
 }
 
-static void _tshEngineExecReverseRedir(TshCmd *Left, TshCmd *Right) {
-  printf("Executing reverse redir.\n");
+static int _tshEngineExecReverseRedir(TshCmd *Left, TshCmd *Right) {
+#ifndef NDEBUG
+  printf("tsh: executing reverse redir.\n");
+#endif
+
   if (kv_size(Right->Args) != 1)
-    return;
+    return -1;
 
   FILE *RedirF = fopen(kv_A(Right->Args, 0), "r");
+  if (!RedirF)
+    return -1;
 
   // Figure out file length.
   fseek(RedirF, 0, SEEK_END);
@@ -141,8 +176,13 @@ static void _tshEngineExecReverseRedir(TshCmd *Left, TshCmd *Right) {
 
   // Read entire file.
   char *Buf = malloc(sizeof(char) * (Length + 1));
-  fread(Buf, sizeof(char), Length, RedirF);
+  if (!Buf)
+    return -1;
+
+  size_t Read = fread(Buf, sizeof(char), Length, RedirF);
   fclose(RedirF);
+  if (Read == 0)
+    return -1;
 
   Buf[Length] = '\0';
   Right->Out = Buf;
@@ -151,5 +191,6 @@ static void _tshEngineExecReverseRedir(TshCmd *Left, TshCmd *Right) {
   Left->In = Buf;
   Left->InSize = Length;
 
-  tshEngineExec(Left);
+  TSH_RET(tshEngineExec(Left));
+  return 0;
 }

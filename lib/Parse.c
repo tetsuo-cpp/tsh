@@ -47,6 +47,9 @@ static TshCmd *_tshParseCmdImpl(TshParse *P, TshCmd *Prev) {
     return Prev;
 
   TshCmd *Cmd = malloc(sizeof(TshCmd));
+  if (!Cmd)
+    return NULL;
+
   tshCmdInit(Cmd);
 
   const TshToken *T = P->CurTok;
@@ -69,7 +72,7 @@ static TshCmd *_tshParseCmdImpl(TshParse *P, TshCmd *Prev) {
 
     return Cmd;
   } else {
-    printf("Unrecognised token kind.\n");
+    free(Cmd);
     return NULL;
   }
 }

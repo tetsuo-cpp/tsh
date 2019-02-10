@@ -6,6 +6,7 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
+#include <assert.h>
 #include <libgen.h>
 #include <stdlib.h>
 #include <sys/utsname.h>
@@ -18,10 +19,13 @@
 char *tshPrompt() {
   // Username.
   char *User = getenv("USER");
+  if (!User)
+    return NULL;
 
   // Hostname.
   struct utsname UtsName;
-  uname(&UtsName);
+  if (uname(&UtsName) != 0)
+    return NULL;
 
   // UName gives a qualified hostname (localhost.localdomain).
   char HostName[TSH_HOSTNAME_SIZE];
@@ -32,12 +36,15 @@ char *tshPrompt() {
 
   // Current working dir.
   char Cwd[TSH_CWD_SIZE];
-  getcwd(Cwd, sizeof(Cwd));
+  if (!getcwd(Cwd, sizeof(Cwd)))
+    return NULL;
+
   char *BaseName = basename(Cwd);
+  assert(BaseName);
 
   // Format prompt.
   char Prompt[TSH_PROMPT_SIZE];
-  snprintf(Prompt, sizeof(Prompt), "[%s@%s %s]$ ", User, HostName, BaseName);
+  snprintf(Prompt, sizeof(Prompt), "<%s@%s %s>$ ", User, HostName, BaseName);
 
   return readline(Prompt);
 }
