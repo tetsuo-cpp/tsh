@@ -12,16 +12,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void _tshRunInput(const char *);
+static void _tshRunInput(TshEngine *, const char *);
 
 int tsh(int ArgC, char **ArgV) {
+  TshEngine E;
+
   // More than one arg is invalid.
   if (ArgC > 2) {
     return EXIT_FAILURE;
   }
   // If we have a single argument then execute it and exit.
   else if (ArgC == 2) {
-    _tshRunInput(ArgV[1]);
+    _tshRunInput(&E, ArgV[1]);
     return EXIT_SUCCESS;
   }
 
@@ -35,14 +37,14 @@ int tsh(int ArgC, char **ArgV) {
       return EXIT_SUCCESS;
     }
 
-    _tshRunInput(Buf);
+    _tshRunInput(&E, Buf);
     free(Buf);
   }
 
   return EXIT_SUCCESS;
 }
 
-static void _tshRunInput(const char *Buf) {
+static void _tshRunInput(TshEngine *E, const char *Buf) {
   size_t BufSize = strlen(Buf);
 
   // Lex into tokens.
@@ -76,7 +78,7 @@ static void _tshRunInput(const char *Buf) {
 
   TshCmd *C = tshParseCmd(&P);
   if (C) {
-    if (tshEngineExec(C) != 0)
+    if (tshEngineExec(E, C) != 0)
       fprintf(stderr, "tsh: tshEngineExec failed.\n");
 
     tshCmdClose(C);

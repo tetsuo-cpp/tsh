@@ -2,4 +2,8 @@
 
 #include <Cmd.h>
 
-int tshEngineExec(TshCmd *);
+typedef struct {
+  int Status;
+} TshEngine;
+
+int tshEngineExec(TshEngine *, TshCmd *);
