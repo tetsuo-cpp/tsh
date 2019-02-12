@@ -1,5 +1,6 @@
 #include "Engine.h"
 
+#include <BuiltIn.h>
 #include <Util.h>
 
 #include <stdio.h>
@@ -8,12 +9,22 @@
 
 #define TSH_BUF_INCREMENT 1024
 
+static int _tshEngineExecImpl(TshEngine *, TshCmd *);
 static int _tshEngineExecCmd(TshEngine *, TshCmd *);
 static int _tshEngineExecPipe(TshEngine *, TshCmd *, TshCmd *);
 static int _tshEngineExecRedir(TshEngine *, TshCmd *, TshCmd *);
 static int _tshEngineExecReverseRedir(TshEngine *, TshCmd *, TshCmd *);
 
-int tshEngineExec(TshEngine *E, TshCmd *Cmd) {
+void tshEngineInit(TshEngine *E) {
+  E->Status = 0;
+  E->Exiting = false;
+}
+
+void tshEngineExec(TshEngine *E, TshCmd *Cmd) {
+  E->Status = _tshEngineExecImpl(E, Cmd);
+}
+
+static int _tshEngineExecImpl(TshEngine *E, TshCmd *Cmd) {
   switch (Cmd->Op) {
   case TK_None:
     return _tshEngineExecCmd(E, Cmd);
@@ -46,6 +57,11 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
 
   printf("]\n");
 #endif
+
+  // Check whether it's a built-in cmd first.
+  int Status;
+  if (tshBuiltInExec(E, Cmd, &Status))
+    return Status;
 
   pid_t Pid;
   int CmdRead[2];
@@ -113,16 +129,14 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
     Cmd->OutSize = BufOffset + 1;
     printf("%s", Cmd->Out);
 
-    int WaitPid, Status;
+    pid_t WaitPid;
     do {
       WaitPid = waitpid(Pid, &Status, WUNTRACED);
     } while (!WIFEXITED(Status) && !WIFSIGNALED(Status));
 
     // Record last code.
-    E->Status = Status;
+    return Status;
   }
-
-  return 0;
 }
 
 static int _tshEngineExecPipe(TshEngine *E, TshCmd *Left, TshCmd *Right) {
@@ -130,7 +144,7 @@ static int _tshEngineExecPipe(TshEngine *E, TshCmd *Left, TshCmd *Right) {
   printf("tsh: executing pipe.\n");
 #endif
 
-  TSH_RET(tshEngineExec(E, Left));
+  TSH_RET(_tshEngineExecImpl(E, Left));
 
   if (!Left->Out)
     return -1;
@@ -148,7 +162,7 @@ static int _tshEngineExecRedir(TshEngine *E, TshCmd *Left, TshCmd *Right) {
   printf("tsh: executing redir.\n");
 #endif
 
-  TSH_RET(tshEngineExec(E, Left));
+  TSH_RET(_tshEngineExecImpl(E, Left));
 
   if (kv_size(Right->Args) != 1)
     return -1;
@@ -200,6 +214,6 @@ static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Left,
   Left->In = Buf;
   Left->InSize = Length;
 
-  TSH_RET(tshEngineExec(E, Left));
+  TSH_RET(_tshEngineExecImpl(E, Left));
   return 0;
 }

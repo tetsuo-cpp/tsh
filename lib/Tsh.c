@@ -16,6 +16,7 @@ static void _tshRunInput(TshEngine *, const char *);
 
 int tsh(int ArgC, char **ArgV) {
   TshEngine E;
+  tshEngineInit(&E);
 
   // More than one arg is invalid.
   if (ArgC > 2) {
@@ -28,19 +29,18 @@ int tsh(int ArgC, char **ArgV) {
   }
 
   // REPL.
-  int Status = 1;
-  while (Status) {
+  while (!E.Exiting) {
     // Read input.
     char *Buf = tshPrompt();
     if (!Buf) {
-      fprintf(stderr, "tsh: closing.\n");
-      return EXIT_SUCCESS;
+      break;
     }
 
     _tshRunInput(&E, Buf);
     free(Buf);
   }
 
+  fprintf(stderr, "tsh: closing.\n");
   return EXIT_SUCCESS;
 }
 
@@ -78,8 +78,9 @@ static void _tshRunInput(TshEngine *E, const char *Buf) {
 
   TshCmd *C = tshParseCmd(&P);
   if (C) {
-    if (tshEngineExec(E, C) != 0)
-      fprintf(stderr, "tsh: tshEngineExec failed.\n");
+    tshEngineExec(E, C);
+    if (E->Status != 0)
+      fprintf(stderr, "tsh: tshEngineExec failed. Ret=%d\n", E->Status);
 
     tshCmdClose(C);
   } else {

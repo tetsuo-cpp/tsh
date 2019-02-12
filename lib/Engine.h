@@ -2,8 +2,12 @@
 
 #include <Cmd.h>
 
+#include <stdbool.h>
+
 typedef struct {
   int Status;
+  bool Exiting;
 } TshEngine;
 
-int tshEngineExec(TshEngine *, TshCmd *);
+void tshEngineInit(TshEngine *);
+void tshEngineExec(TshEngine *, TshCmd *);
