@@ -28,16 +28,12 @@ static int _tshEngineExecImpl(TshEngine *E, TshCmd *Cmd) {
   switch (Cmd->Op) {
   case TK_None:
     return _tshEngineExecCmd(E, Cmd);
-    break;
   case TK_Pipe:
     return _tshEngineExecPipe(E, Cmd->Left, Cmd->Right);
-    break;
   case TK_Redir:
     return _tshEngineExecRedir(E, Cmd->Left, Cmd->Right);
-    break;
   case TK_ReverseRedir:
     return _tshEngineExecReverseRedir(E, Cmd->Left, Cmd->Right);
-    break;
   default:
     return -1;
   }
