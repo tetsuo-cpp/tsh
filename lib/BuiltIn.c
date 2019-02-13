@@ -26,7 +26,7 @@ static int _tshBuiltInCd(TshEngine *E, TshCmd *Cmd) {
   (void)E;
   if (kv_size(Cmd->Args) != 2) {
     fprintf(stderr,
-            "tsh: incorrect number of args to cd. Expected=\"cd [DEST]\"");
+            "tsh: incorrect number of args to cd. Expected=\"cd [DEST]\"\n");
     return -1;
   }
 
@@ -40,7 +40,8 @@ static int _tshBuiltInCd(TshEngine *E, TshCmd *Cmd) {
 static int _tshBuiltInHelp(TshEngine *E, TshCmd *Cmd) {
   (void)E;
   if (kv_size(Cmd->Args) != 1) {
-    fprintf(stderr, "tsh: incorrect number of args to help. Expected=\"help\"");
+    fprintf(stderr,
+            "tsh: incorrect number of args to help. Expected=\"help\"\n");
     return -1;
   }
 
@@ -53,7 +54,8 @@ static int _tshBuiltInHelp(TshEngine *E, TshCmd *Cmd) {
 
 static int _tshBuiltInExit(TshEngine *E, TshCmd *Cmd) {
   if (kv_size(Cmd->Args) != 1) {
-    fprintf(stderr, "tsh: incorrect number of args to exit. Expected=\"exit\"");
+    fprintf(stderr,
+            "tsh: incorrect number of args to exit. Expected=\"exit\"\n");
     return -1;
   }
 

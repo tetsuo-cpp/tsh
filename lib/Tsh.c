@@ -32,15 +32,14 @@ int tsh(int ArgC, char **ArgV) {
   while (!E.Exiting) {
     // Read input.
     char *Buf = tshPrompt();
-    if (!Buf) {
+    if (!Buf)
       break;
-    }
 
     _tshRunInput(&E, Buf);
     free(Buf);
   }
 
-  fprintf(stderr, "tsh: closing.\n");
+  printf("tsh: closing.\n");
   return EXIT_SUCCESS;
 }
 
