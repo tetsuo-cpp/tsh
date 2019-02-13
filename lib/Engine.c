@@ -122,7 +122,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
 
     Buf[BufOffset] = '\0';
     Cmd->Out = Buf;
-    Cmd->OutSize = BufOffset + 1;
+    Cmd->OutSize = BufOffset;
     printf("%s", Cmd->Out);
 
     pid_t WaitPid;
