@@ -25,7 +25,7 @@ int tsh(int ArgC, char **ArgV) {
   // If we have a single argument then execute it and exit.
   else if (ArgC == 2) {
     _tshRunInput(&E, ArgV[1]);
-    return EXIT_SUCCESS;
+    return E.Status;
   }
 
   // REPL.
@@ -46,13 +46,14 @@ int tsh(int ArgC, char **ArgV) {
 static void _tshRunInput(TshEngine *E, const char *Buf) {
   size_t BufSize = strlen(Buf);
 
-  // Lex into tokens.
   TshLex L;
   TshToken T;
-  TshTokenVec Tokens;
   tshLexInit(&L, Buf, BufSize);
+
+  TshTokenVec Tokens;
   kv_init(Tokens);
 
+  // Lex into tokens.
   while (1) {
     tshLexGetToken(&L, &T);
     if (T.Kind == TK_EndOfFile)

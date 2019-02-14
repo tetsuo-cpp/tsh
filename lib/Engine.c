@@ -125,6 +125,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
     Cmd->OutSize = BufOffset;
     printf("%s", Cmd->Out);
 
+    // Spin until cmd has finished executing.
     pid_t WaitPid;
     do {
       WaitPid = waitpid(Pid, &Status, WUNTRACED);
