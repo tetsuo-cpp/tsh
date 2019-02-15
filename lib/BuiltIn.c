@@ -30,11 +30,7 @@ static int _tshBuiltInCd(TshEngine *E, TshCmd *Cmd) {
     return -1;
   }
 
-  int Status;
-  if ((Status = chdir(kv_A(Cmd->Args, 1))) != 0)
-    return Status;
-
-  return 0;
+  return chdir(kv_A(Cmd->Args, 1));
 }
 
 static int _tshBuiltInHelp(TshEngine *E, TshCmd *Cmd) {

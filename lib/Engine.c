@@ -14,6 +14,8 @@ static int _tshEngineExecCmd(TshEngine *, TshCmd *, bool);
 static int _tshEngineExecPipe(TshEngine *, TshCmd *, bool);
 static int _tshEngineExecRedir(TshEngine *, TshCmd *, bool);
 static int _tshEngineExecReverseRedir(TshEngine *, TshCmd *, bool);
+static void _tshEngineChildExec(TshCmd *, int, int, bool);
+static int _tshEngineParentExec(TshCmd *, int, int, bool, pid_t);
 
 void tshEngineInit(TshEngine *E) {
   E->Status = 0;
@@ -65,8 +67,8 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   int CmdWrite[2];
 
   // Open two pipes.
-  // CmdRead is for the shell to read the child's stdout.
-  // CmdWrite is for the shell to write to the child's stdin.
+  // CmdRead: Cmd -> Shell.
+  // CmdWrite: Shell -> Cmd.
   pipe(CmdRead);
   pipe(CmdWrite);
 
@@ -76,23 +78,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
     close(CmdRead[0]);
     close(CmdWrite[1]);
 
-    // Close reader.
-    if (Cmd->In)
-      dup2(CmdWrite[0], STDIN_FILENO);
-
-    close(CmdWrite[0]);
-
-    // Redir stdout and stderr to pipe and close writer.
-    if (!Interactive) {
-      dup2(CmdRead[1], STDOUT_FILENO);
-      dup2(CmdRead[1], STDERR_FILENO);
-    }
-
-    close(CmdRead[1]);
-
-    kv_push(char *, Cmd->Args, NULL);
-    if (execvp(kv_A(Cmd->Args, 0), Cmd->Args.a) == -1)
-      perror("tsh");
+    _tshEngineChildExec(Cmd, CmdWrite[0], CmdRead[1], Interactive);
 
     exit(EXIT_FAILURE);
   } else {
@@ -100,48 +86,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
     close(CmdRead[1]);
     close(CmdWrite[0]);
 
-    // If we have some stdin value to pipe into the current cmd.
-    if (Cmd->In)
-      write(CmdWrite[1], Cmd->In, Cmd->InSize);
-
-    // Close writer.
-    close(CmdWrite[1]);
-
-    if (!Interactive) {
-      size_t BufSize = sizeof(char) * TSH_BUF_INCREMENT;
-      char *Buf = malloc(BufSize);
-      if (!Buf)
-        return -1;
-
-      size_t BufOffset = 0;
-      while (1) {
-        ssize_t AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_INCREMENT);
-        if (AmtRead == 0)
-          break;
-
-        BufSize += sizeof(char) * TSH_BUF_INCREMENT;
-        Buf = realloc(Buf, BufSize);
-        if (!Buf)
-          return -1;
-
-        BufOffset += AmtRead;
-      }
-
-      Buf[BufOffset] = '\0';
-      Cmd->Out = Buf;
-      Cmd->OutSize = BufOffset;
-    }
-
-    close(CmdRead[0]);
-
-    // Spin until cmd has finished executing.
-    pid_t WaitPid;
-    do {
-      WaitPid = waitpid(Pid, &Status, WUNTRACED);
-    } while (!WIFEXITED(Status) && !WIFSIGNALED(Status));
-
-    // Record last code.
-    return Status;
+    return _tshEngineParentExec(Cmd, CmdRead[0], CmdWrite[1], Interactive, Pid);
   }
 }
 
@@ -232,4 +177,72 @@ static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Cmd,
 
   TSH_RET(_tshEngineExecImpl(E, Cmd->Left, Interactive));
   return 0;
+}
+
+void _tshEngineChildExec(TshCmd *Cmd, int Reader, int Writer,
+                         bool Interactive) {
+  // Close reader.
+  if (Cmd->In)
+    dup2(Reader, STDIN_FILENO);
+
+  close(Reader);
+
+  // Redir stdout and stderr to pipe and close writer.
+  if (!Interactive) {
+    dup2(Writer, STDOUT_FILENO);
+    dup2(Writer, STDERR_FILENO);
+  }
+
+  close(Writer);
+
+  kv_push(char *, Cmd->Args, NULL);
+  if (execvp(kv_A(Cmd->Args, 0), Cmd->Args.a) == -1)
+    perror("tsh");
+}
+
+int _tshEngineParentExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive,
+                         pid_t Pid) {
+  // If we have some stdin value to pipe into the current cmd.
+  if (Cmd->In)
+    write(Writer, Cmd->In, Cmd->InSize);
+
+  // Close writer.
+  close(Writer);
+
+  if (!Interactive) {
+    size_t BufSize = sizeof(char) * TSH_BUF_INCREMENT;
+    char *Buf = malloc(BufSize);
+    if (!Buf)
+      return -1;
+
+    size_t BufOffset = 0;
+    while (1) {
+      ssize_t AmtRead = read(Reader, Buf + BufOffset, TSH_BUF_INCREMENT);
+      if (AmtRead == 0)
+        break;
+
+      BufSize += sizeof(char) * TSH_BUF_INCREMENT;
+      Buf = realloc(Buf, BufSize);
+      if (!Buf)
+        return -1;
+
+      BufOffset += AmtRead;
+    }
+
+    Buf[BufOffset] = '\0';
+    Cmd->Out = Buf;
+    Cmd->OutSize = BufOffset;
+  }
+
+  close(Reader);
+
+  // Spin until cmd has finished executing.
+  int Status;
+  pid_t WaitPid;
+  do {
+    WaitPid = waitpid(Pid, &Status, WUNTRACED);
+  } while (!WIFEXITED(Status) && !WIFSIGNALED(Status));
+
+  // Record last code.
+  return Status;
 }
