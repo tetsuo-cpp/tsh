@@ -9,11 +9,11 @@
 
 #define TSH_BUF_INCREMENT 1024
 
-static int _tshEngineExecImpl(TshEngine *, TshCmd *);
-static int _tshEngineExecCmd(TshEngine *, TshCmd *);
-static int _tshEngineExecPipe(TshEngine *, TshCmd *, TshCmd *);
-static int _tshEngineExecRedir(TshEngine *, TshCmd *, TshCmd *);
-static int _tshEngineExecReverseRedir(TshEngine *, TshCmd *, TshCmd *);
+static int _tshEngineExecImpl(TshEngine *, TshCmd *, bool);
+static int _tshEngineExecCmd(TshEngine *, TshCmd *, bool);
+static int _tshEngineExecPipe(TshEngine *, TshCmd *, bool);
+static int _tshEngineExecRedir(TshEngine *, TshCmd *, bool);
+static int _tshEngineExecReverseRedir(TshEngine *, TshCmd *, bool);
 
 void tshEngineInit(TshEngine *E) {
   E->Status = 0;
@@ -21,27 +21,28 @@ void tshEngineInit(TshEngine *E) {
 }
 
 void tshEngineExec(TshEngine *E, TshCmd *Cmd) {
-  E->Status = _tshEngineExecImpl(E, Cmd);
+  E->Status = _tshEngineExecImpl(E, Cmd, true);
 }
 
-static int _tshEngineExecImpl(TshEngine *E, TshCmd *Cmd) {
+static int _tshEngineExecImpl(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   switch (Cmd->Op) {
   case TK_None:
-    return _tshEngineExecCmd(E, Cmd);
+    return _tshEngineExecCmd(E, Cmd, Interactive);
   case TK_Pipe:
-    return _tshEngineExecPipe(E, Cmd->Left, Cmd->Right);
+    return _tshEngineExecPipe(E, Cmd, Interactive);
   case TK_Redir:
-    return _tshEngineExecRedir(E, Cmd->Left, Cmd->Right);
+    return _tshEngineExecRedir(E, Cmd, Interactive);
   case TK_ReverseRedir:
-    return _tshEngineExecReverseRedir(E, Cmd->Left, Cmd->Right);
+    return _tshEngineExecReverseRedir(E, Cmd, Interactive);
   default:
     return -1;
   }
 }
 
-static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
+static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
 #ifndef NDEBUG
-  printf("tsh: executing cmd. Cmd=%s Args=[", kv_A(Cmd->Args, 0));
+  printf("tsh: executing cmd. Cmd=%s Interactive=%d Args=[", kv_A(Cmd->Args, 0),
+         Interactive);
   for (KV_FOREACH(Index, Cmd->Args)) {
     if (Index == 0)
       continue;
@@ -71,6 +72,8 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
 
   Pid = fork();
   if (Pid == 0) {
+    // Parent will use these.
+    close(CmdRead[0]);
     close(CmdWrite[1]);
 
     // Close reader.
@@ -78,11 +81,13 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
       dup2(CmdWrite[0], STDIN_FILENO);
 
     close(CmdWrite[0]);
-    close(CmdRead[0]);
 
     // Redir stdout and stderr to pipe and close writer.
-    dup2(CmdRead[1], STDOUT_FILENO);
-    dup2(CmdRead[1], STDERR_FILENO);
+    if (!Interactive) {
+      dup2(CmdRead[1], STDOUT_FILENO);
+      dup2(CmdRead[1], STDERR_FILENO);
+    }
+
     close(CmdRead[1]);
 
     kv_push(char *, Cmd->Args, NULL);
@@ -91,6 +96,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
 
     exit(EXIT_FAILURE);
   } else {
+    // Child will use these.
     close(CmdRead[1]);
     close(CmdWrite[0]);
 
@@ -101,29 +107,32 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
     // Close writer.
     close(CmdWrite[1]);
 
-    size_t BufSize = sizeof(char) * TSH_BUF_INCREMENT;
-    char *Buf = malloc(BufSize);
-    if (!Buf)
-      return -1;
-
-    size_t BufOffset = 0;
-    while (1) {
-      ssize_t AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_INCREMENT);
-      if (AmtRead == 0)
-        break;
-
-      BufSize += sizeof(char) * TSH_BUF_INCREMENT;
-      Buf = realloc(Buf, BufSize);
+    if (!Interactive) {
+      size_t BufSize = sizeof(char) * TSH_BUF_INCREMENT;
+      char *Buf = malloc(BufSize);
       if (!Buf)
         return -1;
 
-      BufOffset += AmtRead;
+      size_t BufOffset = 0;
+      while (1) {
+        ssize_t AmtRead = read(CmdRead[0], Buf + BufOffset, TSH_BUF_INCREMENT);
+        if (AmtRead == 0)
+          break;
+
+        BufSize += sizeof(char) * TSH_BUF_INCREMENT;
+        Buf = realloc(Buf, BufSize);
+        if (!Buf)
+          return -1;
+
+        BufOffset += AmtRead;
+      }
+
+      Buf[BufOffset] = '\0';
+      Cmd->Out = Buf;
+      Cmd->OutSize = BufOffset;
     }
 
-    Buf[BufOffset] = '\0';
-    Cmd->Out = Buf;
-    Cmd->OutSize = BufOffset;
-    printf("%s", Cmd->Out);
+    close(CmdRead[0]);
 
     // Spin until cmd has finished executing.
     pid_t WaitPid;
@@ -136,39 +145,47 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
   }
 }
 
-static int _tshEngineExecPipe(TshEngine *E, TshCmd *Left, TshCmd *Right) {
+static int _tshEngineExecPipe(TshEngine *E, TshCmd *Cmd, bool Interactive) {
 #ifndef NDEBUG
   printf("tsh: executing pipe.\n");
 #endif
 
-  TSH_RET(_tshEngineExecImpl(E, Left));
+  Cmd->Left->In = Cmd->In;
+  Cmd->Left->InSize = Cmd->InSize;
 
-  if (!Left->Out)
+  TSH_RET(_tshEngineExecImpl(E, Cmd->Left, false));
+
+  if (!Cmd->Left->Out)
     return -1;
 
   // Pipe left cmd's stdout to right cmd's stdin.
-  Right->In = Left->Out;
-  Right->InSize = Left->OutSize;
+  Cmd->Right->In = Cmd->Left->Out;
+  Cmd->Right->InSize = Cmd->Left->OutSize;
 
-  tshEngineExec(E, Right);
+  TSH_RET(_tshEngineExecImpl(E, Cmd->Right, Interactive));
   return 0;
 }
 
-static int _tshEngineExecRedir(TshEngine *E, TshCmd *Left, TshCmd *Right) {
+static int _tshEngineExecRedir(TshEngine *E, TshCmd *Cmd, bool Interactive) {
+  (void)Interactive;
 #ifndef NDEBUG
   printf("tsh: executing redir.\n");
 #endif
 
-  TSH_RET(_tshEngineExecImpl(E, Left));
+  Cmd->Left->In = Cmd->In;
+  Cmd->Left->InSize = Cmd->InSize;
 
-  if (kv_size(Right->Args) != 1)
+  TSH_RET(_tshEngineExecImpl(E, Cmd->Left, false));
+
+  if (kv_size(Cmd->Right->Args) != 1)
     return -1;
 
-  FILE *RedirF = fopen(kv_A(Right->Args, 0), "w");
+  FILE *RedirF = fopen(kv_A(Cmd->Right->Args, 0), "w");
   if (!RedirF)
     return -1;
 
-  size_t Written = fwrite(Left->Out, sizeof(char), Left->OutSize, RedirF);
+  size_t Written =
+      fwrite(Cmd->Left->Out, sizeof(char), Cmd->Left->OutSize, RedirF);
   fclose(RedirF);
   if (Written == 0)
     return -1;
@@ -176,16 +193,16 @@ static int _tshEngineExecRedir(TshEngine *E, TshCmd *Left, TshCmd *Right) {
   return 0;
 }
 
-static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Left,
-                                      TshCmd *Right) {
+static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Cmd,
+                                      bool Interactive) {
 #ifndef NDEBUG
   printf("tsh: executing reverse redir.\n");
 #endif
 
-  if (kv_size(Right->Args) != 1)
+  if (kv_size(Cmd->Right->Args) != 1)
     return -1;
 
-  FILE *RedirF = fopen(kv_A(Right->Args, 0), "r");
+  FILE *RedirF = fopen(kv_A(Cmd->Right->Args, 0), "r");
   if (!RedirF)
     return -1;
 
@@ -207,12 +224,12 @@ static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Left,
     return -1;
 
   Buf[Length] = '\0';
-  Right->Out = Buf;
-  Right->OutSize = Length;
+  Cmd->Right->Out = Buf;
+  Cmd->Right->OutSize = Length;
 
-  Left->In = Buf;
-  Left->InSize = Length;
+  Cmd->Left->In = Buf;
+  Cmd->Left->InSize = Length;
 
-  TSH_RET(_tshEngineExecImpl(E, Left));
+  TSH_RET(_tshEngineExecImpl(E, Cmd->Left, Interactive));
   return 0;
 }
