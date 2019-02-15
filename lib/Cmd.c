@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TSH_ENV_VAR_SIZE 64
-
 static bool _tshCmdAddEnvVar(TshCmd *, const char *, size_t);
 
 void tshCmdInit(TshCmd *C) {
