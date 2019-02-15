@@ -81,8 +81,8 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd) {
     close(CmdRead[0]);
 
     // Redir stdout and stderr to pipe and close writer.
-    dup2(CmdRead[1], 1);
-    dup2(CmdRead[1], 2);
+    dup2(CmdRead[1], STDOUT_FILENO);
+    dup2(CmdRead[1], STDERR_FILENO);
     close(CmdRead[1]);
 
     kv_push(char *, Cmd->Args, NULL);
@@ -196,8 +196,10 @@ static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Left,
 
   // Read entire file.
   char *Buf = malloc(sizeof(char) * (Length + 1));
-  if (!Buf)
+  if (!Buf) {
+    fclose(RedirF);
     return -1;
+  }
 
   size_t Read = fread(Buf, sizeof(char), Length, RedirF);
   fclose(RedirF);

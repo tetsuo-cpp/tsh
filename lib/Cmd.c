@@ -2,9 +2,14 @@
 
 #include <Util.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define TSH_ENV_VAR_SIZE 64
+
+static bool _tshCmdAddEnvVar(TshCmd *, const char *, size_t);
 
 void tshCmdInit(TshCmd *C) {
   kv_init(C->Args);
@@ -18,6 +23,10 @@ void tshCmdInit(TshCmd *C) {
 }
 
 void tshCmdAddArg(TshCmd *C, const char *Buf, size_t BufSize) {
+  // Environment variable.
+  if (_tshCmdAddEnvVar(C, Buf, BufSize))
+    return;
+
   char *Arg = malloc(sizeof(char) * (BufSize + 1));
   strncpy(Arg, Buf, BufSize);
   Arg[BufSize] = '\0';
@@ -47,4 +56,29 @@ void tshCmdClose(TshCmd *C) {
   C->InSize = 0;
 
   free(C);
+}
+
+static bool _tshCmdAddEnvVar(TshCmd *C, const char *Buf, size_t BufSize) {
+  if (Buf[0] != '$')
+    return false;
+
+  char *EnvVar = malloc(sizeof(BufSize));
+  if (!EnvVar)
+    return false;
+
+  strncpy(EnvVar, Buf + 1, BufSize - 1);
+  EnvVar[BufSize - 1] = '\0';
+
+  char *Result = getenv(EnvVar);
+  free(EnvVar);
+  if (!Result)
+    return false;
+
+  char *Arg = malloc(sizeof(char) * strlen(Result) + 1);
+  if (!Arg)
+    return false;
+
+  strcpy(Arg, Result);
+  kv_push(char *, C->Args, Arg);
+  return true;
 }
