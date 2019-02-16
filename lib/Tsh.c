@@ -14,17 +14,25 @@
 
 static void _tshRunInput(TshEngine *, const char *);
 
+const char *TshDBName = "tsh.db";
+
 int tsh(int ArgC, char **ArgV) {
+  TshDataBase DB;
+  if (!tshDataBaseInit(&DB, TshDBName))
+    return -1;
+
   TshEngine E;
-  tshEngineInit(&E);
+  tshEngineInit(&E, &DB);
 
   // More than one arg is invalid.
   if (ArgC > 2) {
+    tshDataBaseClose(&DB);
     return EXIT_FAILURE;
   }
   // If we have a single argument then execute it and exit.
   else if (ArgC == 2) {
     _tshRunInput(&E, ArgV[1]);
+    tshDataBaseClose(&DB);
     return E.Status;
   }
 
@@ -39,6 +47,7 @@ int tsh(int ArgC, char **ArgV) {
     free(Buf);
   }
 
+  tshDataBaseClose(&DB);
   printf("tsh: closing.\n");
   return EXIT_SUCCESS;
 }

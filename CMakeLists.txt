@@ -9,6 +9,7 @@ set(
   TSH_SOURCE_FILES
   lib/BuiltIn.c
   lib/Cmd.c
+  lib/DataBase.c
   lib/Engine.c
   lib/Lex.c
   lib/Parse.c
@@ -19,4 +20,4 @@ set(
 
 add_executable(tsh ${TSH_SOURCE_FILES})
 target_include_directories(tsh PRIVATE lib external)
-target_link_libraries(tsh readline)
+target_link_libraries(tsh readline sqlite3)

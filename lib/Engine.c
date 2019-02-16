@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 #define TSH_BUF_INCREMENT 1024
@@ -15,11 +16,12 @@ static int _tshEngineExecPipe(TshEngine *, TshCmd *, bool);
 static int _tshEngineExecRedir(TshEngine *, TshCmd *, bool);
 static int _tshEngineExecReverseRedir(TshEngine *, TshCmd *, bool);
 static void _tshEngineChildExec(TshCmd *, int, int, bool);
-static int _tshEngineParentExec(TshCmd *, int, int, bool, pid_t);
+static int _tshEngineParentExec(TshEngine *, TshCmd *, int, int, bool, pid_t);
 
-void tshEngineInit(TshEngine *E) {
+void tshEngineInit(TshEngine *E, TshDataBase *DB) {
   E->Status = 0;
   E->Exiting = false;
+  E->DB = DB;
 }
 
 void tshEngineExec(TshEngine *E, TshCmd *Cmd) {
@@ -86,7 +88,8 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
     close(CmdRead[1]);
     close(CmdWrite[0]);
 
-    return _tshEngineParentExec(Cmd, CmdRead[0], CmdWrite[1], Interactive, Pid);
+    return _tshEngineParentExec(E, Cmd, CmdRead[0], CmdWrite[1], Interactive,
+                                Pid);
   }
 }
 
@@ -200,8 +203,10 @@ void _tshEngineChildExec(TshCmd *Cmd, int Reader, int Writer,
     perror("tsh");
 }
 
-int _tshEngineParentExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive,
-                         pid_t Pid) {
+int _tshEngineParentExec(TshEngine *E, TshCmd *Cmd, int Reader, int Writer,
+                         bool Interactive, pid_t Pid) {
+  clock_t StartTime = clock();
+
   // If we have some stdin value to pipe into the current cmd.
   if (Cmd->In)
     write(Writer, Cmd->In, Cmd->InSize);
@@ -242,6 +247,10 @@ int _tshEngineParentExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive,
   do {
     WaitPid = waitpid(Pid, &Status, WUNTRACED);
   } while (!WIFEXITED(Status) && !WIFSIGNALED(Status));
+
+  clock_t EndTime = clock();
+  float Duration = ((float)(EndTime - StartTime)) / CLOCKS_PER_SEC;
+  tshDataBaseRecordDuration(E->DB, kv_A(Cmd->Args, 0), Duration);
 
   // Record last code.
   return Status;
