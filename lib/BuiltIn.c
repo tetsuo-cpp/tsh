@@ -66,17 +66,15 @@ static int _tshBuiltInExit(TshEngine *E, TshCmd *Cmd) {
 
 static int _tshBuiltInStats(TshEngine *E, TshCmd *Cmd) {
   if (kv_size(Cmd->Args) == 1) {
-    if (!tshDataBaseGetTopDurations(E->DB)) {
+    if (!tshDataBaseGetTopDurations(E->DB))
       return -1;
-    }
 
     printf("Printing the 10 commands with the highest average runtime "
            "duration:\n");
   } else if (kv_size(Cmd->Args) == 2) {
     const char *CmdName = kv_A(Cmd->Args, 1);
-    if (!tshDataBaseGetDuration(E->DB, CmdName)) {
+    if (!tshDataBaseGetDuration(E->DB, CmdName))
       return -1;
-    }
 
     printf("Printing the average runtime duration for command \"%s\":\n",
            CmdName);
