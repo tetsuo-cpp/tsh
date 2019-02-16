@@ -11,6 +11,7 @@ This is a toy shell I wrote to become more familar with C.
 * More granular I/O redirection (choosing between stdout and stderr).
 * More operators.
 * Shell history.
+* Make less buggy.
 ## Dependencies
 * CMake.
 * GNU ReadLine.
@@ -36,7 +37,7 @@ To run Tsh as the active shell (Ctrl-D to exit).
 ```
 ./tsh
 ```
-## Built-in commands.
+## Built-in commands
 * ```cd```: Change current working directory.
 * ```help```: Display help text.
 * ```exit```: Exit the shell.
