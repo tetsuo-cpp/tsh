@@ -92,20 +92,21 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
 
   if (ArgC != 2) {
     fprintf(stderr,
-            "tsh: received wrong number of columns from db. NumColumns=%d",
+            "tsh: received wrong number of columns from db. NumColumns=%d\n",
             ArgC);
     return -1;
   }
 
   for (int Index = 0; Index < ArgC; ++Index) {
     if (strcmp("cmd_name", ColumnNames[Index]) == 0) {
-      Stats.CmdName = malloc(sizeof(char) * strlen(ArgV[Index]) + 1);
+      Stats.CmdName = malloc(sizeof(char) * (strlen(ArgV[Index]) + 1));
       strcpy(Stats.CmdName, ArgV[Index]);
     } else if (strcmp("duration", ColumnNames[Index]) == 0) {
-      Stats.Duration = malloc(sizeof(char) * strlen(ArgV[Index]) + 1);
+      Stats.Duration = malloc(sizeof(char) * (strlen(ArgV[Index]) + 1));
       strcpy(Stats.Duration, ArgV[Index]);
     } else {
-      fprintf(stderr, "tsh: received unrecognised fieldname from db. Field=%s",
+      fprintf(stderr,
+              "tsh: received unrecognised fieldname from db. Field=%s\n",
               ColumnNames[Index]);
 
       _tshStatsDataDestroy(&Stats);
