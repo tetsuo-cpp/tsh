@@ -72,7 +72,7 @@ static bool _tshCmdAddEnvVar(TshCmd *C, const char *Buf, size_t BufSize) {
   if (!Result)
     return false;
 
-  char *Arg = malloc(sizeof(char) * strlen(Result) + 1);
+  char *Arg = malloc(sizeof(char) * (strlen(Result) + 1));
   if (!Arg)
     return false;
 
