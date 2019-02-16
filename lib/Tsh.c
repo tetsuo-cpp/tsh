@@ -14,7 +14,7 @@
 
 static void _tshRunInput(TshEngine *, const char *);
 
-const char *TshDBName = "tsh.db";
+const char *TshDBName = "/tmp/tsh.db";
 
 int tsh(int ArgC, char **ArgV) {
   TshDataBase DB;
