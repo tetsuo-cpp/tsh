@@ -31,12 +31,12 @@ void tshCmdAddArg(TshCmd *C, const char *Buf, size_t BufSize) {
   kv_push(char *, C->Args, Arg);
 }
 
-void tshCmdClose(TshCmd *C) {
+void tshCmdDestroy(TshCmd *C) {
   if (C->Left)
-    tshCmdClose(C->Left);
+    tshCmdDestroy(C->Left);
 
   if (C->Right)
-    tshCmdClose(C->Right);
+    tshCmdDestroy(C->Right);
 
   for (KV_FOREACH(Index, C->Args))
     free(kv_A(C->Args, Index));

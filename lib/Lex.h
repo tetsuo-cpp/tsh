@@ -26,5 +26,5 @@ typedef struct {
 
 void tshLexInit(TshLex *, const char *, size_t);
 void tshLexGetToken(TshLex *, TshToken *);
-void tshLexClose(TshLex *);
+void tshLexDestroy(TshLex *);
 const char *tshTokenKindToString(TshTokenKind);

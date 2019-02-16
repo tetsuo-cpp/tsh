@@ -26,13 +26,13 @@ int tsh(int ArgC, char **ArgV) {
 
   // More than one arg is invalid.
   if (ArgC > 2) {
-    tshDataBaseClose(&DB);
+    tshDataBaseDestroy(&DB);
     return EXIT_FAILURE;
   }
   // If we have a single argument then execute it and exit.
   else if (ArgC == 2) {
     _tshRunInput(&E, ArgV[1]);
-    tshDataBaseClose(&DB);
+    tshDataBaseDestroy(&DB);
     return E.Status;
   }
 
@@ -47,7 +47,7 @@ int tsh(int ArgC, char **ArgV) {
     free(Buf);
   }
 
-  tshDataBaseClose(&DB);
+  tshDataBaseDestroy(&DB);
   printf("tsh: closing.\n");
   return EXIT_SUCCESS;
 }
@@ -91,12 +91,12 @@ static void _tshRunInput(TshEngine *E, const char *Buf) {
     if (E->Status != 0)
       fprintf(stderr, "tsh: tshEngineExec failed. Ret=%d\n", E->Status);
 
-    tshCmdClose(C);
+    tshCmdDestroy(C);
   } else {
     fprintf(stderr, "tsh: tshParseCmd failed.\n");
   }
 
-  tshLexClose(&L);
-  tshParseClose(&P);
+  tshLexDestroy(&L);
+  tshParseDestroy(&P);
   kv_destroy(Tokens);
 }

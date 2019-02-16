@@ -32,7 +32,7 @@ static const char *SelectDuration =
 static int _tshDataBaseSQLiteCallback(void *, int, char **, char **);
 static bool _tshDataBaseQueryDurations(TshDataBase *, const char *);
 static void _tshStatsDataInit(TshStatsData *);
-static void _tshStatsDataClose(TshStatsData *);
+static void _tshStatsDataDestroy(TshStatsData *);
 
 bool tshDataBaseInit(TshDataBase *D, const char *Name) {
   if (sqlite3_open(Name, &D->DB) != 0) {
@@ -72,11 +72,11 @@ bool tshDataBaseGetDuration(TshDataBase *D, const char *CmdName) {
   return _tshDataBaseQueryDurations(D, Query);
 }
 
-void tshDataBaseClose(TshDataBase *D) {
+void tshDataBaseDestroy(TshDataBase *D) {
   sqlite3_close(D->DB);
   if (D->Clear) {
     for (KV_FOREACH(Index, D->Data))
-      _tshStatsDataClose(&kv_A(D->Data, Index));
+      _tshStatsDataDestroy(&kv_A(D->Data, Index));
 
     kv_destroy(D->Data);
     D->Clear = false;
@@ -108,7 +108,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
       fprintf(stderr, "tsh: received unrecognised fieldname from db. Field=%s",
               ColumnNames[Index]);
 
-      _tshStatsDataClose(&Stats);
+      _tshStatsDataDestroy(&Stats);
       return -1;
     }
   }
@@ -120,7 +120,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
 static bool _tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
   if (D->Clear) {
     for (KV_FOREACH(Index, D->Data))
-      _tshStatsDataClose(&kv_A(D->Data, Index));
+      _tshStatsDataDestroy(&kv_A(D->Data, Index));
 
     kv_destroy(D->Data);
   }
@@ -144,7 +144,7 @@ static void _tshStatsDataInit(TshStatsData *S) {
   S->Duration = NULL;
 }
 
-static void _tshStatsDataClose(TshStatsData *S) {
+static void _tshStatsDataDestroy(TshStatsData *S) {
   if (S->CmdName) {
     free(S->CmdName);
     S->CmdName = NULL;

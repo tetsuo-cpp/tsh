@@ -50,7 +50,7 @@ void tshLexGetToken(TshLex *L, TshToken *T) {
   _tshLexGetChar(L);
 }
 
-void tshLexClose(TshLex *L) {
+void tshLexDestroy(TshLex *L) {
   L->Buf = NULL;
   L->BufSize = 0;
   L->CurPos = 0;

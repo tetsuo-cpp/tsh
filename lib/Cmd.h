@@ -19,4 +19,4 @@ struct TshCmd {
 
 void tshCmdInit(TshCmd *);
 void tshCmdAddArg(TshCmd *, const char *, size_t);
-void tshCmdClose(TshCmd *);
+void tshCmdDestroy(TshCmd *);

@@ -17,7 +17,7 @@ void tshParseInit(TshParse *P, TshTokenVec Tokens) {
 
 TshCmd *tshParseCmd(TshParse *P) { return _tshParseCmdImpl(P, NULL); }
 
-void tshParseClose(TshParse *P) {
+void tshParseDestroy(TshParse *P) {
   P->TokenPos = 0;
   P->CurTok = NULL;
 }

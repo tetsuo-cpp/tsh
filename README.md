@@ -16,14 +16,14 @@ This is a toy shell I wrote to become more familar with C.
 * CMake.
 * GNU ReadLine.
 * SQLite Version 3.
-* Attractive Chaos' KLib.
+* Attractive Chaos' Klib.
 ## Build
 Bring in Git submodules.
 ```
 git submodule init
 git submodule update
 ```
-Use CMake to generate a platform specific build script and then invoke that:
+Use CMake to generate a platform specific build script and then invoke that.
 ```
 cmake .
 make

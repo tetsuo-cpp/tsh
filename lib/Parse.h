@@ -15,4 +15,4 @@ typedef struct {
 
 void tshParseInit(TshParse *, TshTokenVec);
 TshCmd *tshParseCmd(TshParse *);
-void tshParseClose(TshParse *);
+void tshParseDestroy(TshParse *);
