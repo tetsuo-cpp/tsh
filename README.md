@@ -14,6 +14,7 @@ This is a toy shell I wrote to become more familar with C.
 * CMake.
 * GNU ReadLine.
 * SQLite Version 3.
+* Attractive Chaos' KLib.
 ## Build
 Use CMake to generate a platform specific build script and then invoke that:
 ```
