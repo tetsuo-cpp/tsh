@@ -56,7 +56,6 @@ static void _tshRunInput(TshEngine *E, const char *Buf) {
   size_t BufSize = strlen(Buf);
 
   TshLex L;
-  TshToken T;
   tshLexInit(&L, Buf, BufSize);
 
   TshTokenVec Tokens;
@@ -64,6 +63,7 @@ static void _tshRunInput(TshEngine *E, const char *Buf) {
 
   // Lex into tokens.
   while (1) {
+    TshToken T;
     tshLexGetToken(&L, &T);
     if (T.Kind == TK_EndOfFile)
       break;

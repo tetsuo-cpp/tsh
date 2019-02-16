@@ -92,7 +92,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
     if (clock_gettime(CLOCK_REALTIME, &StartTime))
       return -1;
 
-    int Status =
+    Status =
         _tshEngineParentExec(Cmd, CmdRead[0], CmdWrite[1], Interactive, Pid);
 
     if (clock_gettime(CLOCK_REALTIME, &EndTime))
@@ -168,7 +168,7 @@ static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Cmd,
 
   // Figure out file length.
   fseek(RedirF, 0, SEEK_END);
-  size_t Length = ftell(RedirF);
+  size_t Length = (size_t)ftell(RedirF);
   rewind(RedirF);
 
   // Read entire file.
@@ -253,9 +253,8 @@ int _tshEngineParentExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive,
 
   // Spin until cmd has finished executing.
   int Status;
-  pid_t WaitPid;
   do {
-    WaitPid = waitpid(Pid, &Status, WUNTRACED);
+    waitpid(Pid, &Status, WUNTRACED);
   } while (!WIFEXITED(Status) && !WIFSIGNALED(Status));
 
   // Record last code.

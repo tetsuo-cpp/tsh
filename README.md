@@ -9,6 +9,7 @@ This is a toy shell I wrote to become more familar with C.
 ## Improvements
 * File globbing.
 * More granular I/O redirection (choosing between stdout and stderr).
+* More operators.
 * Shell history.
 ## Dependencies
 * CMake.
