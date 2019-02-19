@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 #include <sys/wait.h>
-#include <time.h>
 #include <unistd.h>
 
 #define TSH_BUF_INCREMENT 1024

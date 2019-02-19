@@ -2,6 +2,8 @@
 
 #include <klib/kvec.h>
 
+#include <time.h>
+
 #define KV_FOREACH(Index, KVec)                                                \
   unsigned int Index = 0;                                                      \
   Index < kv_size(KVec);                                                       \
