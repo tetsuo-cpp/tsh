@@ -100,7 +100,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
   for (int Index = 0; Index < ArgC; ++Index) {
     if (strcmp("cmd_name", ColumnNames[Index]) == 0) {
       if (Stats.CmdName) {
-        fprintf(stderr, "tsh: received duplicate field \"cmd_name\" field.");
+        fprintf(stderr, "tsh: received duplicate \"cmd_name\" field.");
         _tshStatsDataDestroy(&Stats);
         return -1;
       }
@@ -109,7 +109,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
       strcpy(Stats.CmdName, ArgV[Index]);
     } else if (strcmp("duration", ColumnNames[Index]) == 0) {
       if (Stats.Duration) {
-        fprintf(stderr, "tsh: received duplicate field \"duration\" field.");
+        fprintf(stderr, "tsh: received duplicate \"duration\" field.");
         _tshStatsDataDestroy(&Stats);
         return -1;
       }
