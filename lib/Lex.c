@@ -72,6 +72,8 @@ const char *tshTokenKindToString(TshTokenKind Kind) {
   case TK_None:
     return "None";
   }
+
+  return "Unknown";
 }
 
 static bool _tshLexGetChar(TshLex *L) {

@@ -60,7 +60,7 @@ static bool _tshCmdAddEnvVar(TshCmd *C, const char *Buf, size_t BufSize) {
   if (Buf[0] != '$')
     return false;
 
-  char *EnvVar = malloc(sizeof(BufSize));
+  char *EnvVar = malloc(BufSize);
   if (!EnvVar)
     return false;
 

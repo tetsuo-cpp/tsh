@@ -99,9 +99,21 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
 
   for (int Index = 0; Index < ArgC; ++Index) {
     if (strcmp("cmd_name", ColumnNames[Index]) == 0) {
+      if (Stats.CmdName) {
+        fprintf(stderr, "tsh: received duplicate field \"cmd_name\" field.");
+        _tshStatsDataDestroy(&Stats);
+        return -1;
+      }
+
       Stats.CmdName = malloc(sizeof(char) * (strlen(ArgV[Index]) + 1));
       strcpy(Stats.CmdName, ArgV[Index]);
     } else if (strcmp("duration", ColumnNames[Index]) == 0) {
+      if (Stats.Duration) {
+        fprintf(stderr, "tsh: received duplicate field \"duration\" field.");
+        _tshStatsDataDestroy(&Stats);
+        return -1;
+      }
+
       Stats.Duration = malloc(sizeof(char) * (strlen(ArgV[Index]) + 1));
       strcpy(Stats.Duration, ArgV[Index]);
     } else {
