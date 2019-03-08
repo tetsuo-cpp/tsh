@@ -23,19 +23,26 @@ Bring in Git submodules.
 git submodule init
 git submodule update
 ```
-Use CMake to generate a platform specific build script and then invoke that.
+Run ```build.sh``` to invoke the CMake build.
 ```
-cmake .
-make
+sh build.sh [BUILD_TYPE:debug/release/asan/ubsan/scan]
 ```
 ## Usage
 To execute a single command.
 ```
-./tsh [COMMAND]
+build/[BUILD_TYPE]/tsh [COMMAND]
 ```
 To run Tsh as the active shell (Ctrl-D to exit).
 ```
-./tsh
+build/[BUILD_TYPE]/tsh
+```
+To run an Address Sanitized build.
+```
+ASAN_OPTIONS="symbolize=1" build/asan/tsh
+```
+To run an Undefined Behaviour Sanitized build.
+```
+UBSAN_OPTIONS="print_stacktrace=1" build/ubsan/tsh
 ```
 ## Built-in commands
 * ```cd```: Change current working directory.

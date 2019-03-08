@@ -19,12 +19,10 @@ case $build_type in
         cmd="cmake -DCMAKE_BUILD_TYPE=Release ../.. && make"
         ;;
     "asan")
-        echo "asan unsupported"
-        exit 1
+        cmd="cmake -DCMAKE_BUILD_TYPE=Debug -DSANITIZER_TYPE=ASan ../.. && make"
         ;;
     "ubsan")
-        echo "ubsan unsupported"
-        exit 1
+        cmd="cmake -DCMAKE_BUILD_TYPE=Debug -DSANITIZER_TYPE=UBSan ../.. && make"
         ;;
     "scan")
         # Need to do a full rebuild for scan-build to work.

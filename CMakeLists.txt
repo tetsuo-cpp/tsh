@@ -20,3 +20,9 @@ set(
 add_executable(tsh ${TSH_SOURCE_FILES})
 target_include_directories(tsh PRIVATE lib external)
 target_link_libraries(tsh readline sqlite3)
+
+if (${SANITIZER_TYPE} STREQUAL "ASan")
+  target_link_libraries(tsh -fsanitize=address)
+elseif (${SANITIZER_TYPE} STREQUAL "UBSan")
+  target_link_libraries(tsh -fsanitize=undefined)
+endif()
