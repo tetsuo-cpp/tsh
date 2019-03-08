@@ -54,7 +54,7 @@ void tshDataBaseRecordDuration(TshDataBase *D, const char *CmdName,
   char Query[TSH_DB_QUERY_SIZE];
   snprintf(Query, sizeof(Query), InsertDuration, CmdName, Duration);
 
-#ifndef NDDEBUG
+#ifndef NDEBUG
   printf("tsh: inserting duration data. Query=\"%s\"\n", Query);
 #endif
 
