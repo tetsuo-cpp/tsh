@@ -15,7 +15,10 @@ set(
   lib/Prompt.c
   lib/Tsh.c
   src/main.c
-)
+  )
+
+include_directories(/usr/local/include)
+link_directories(/usr/local/lib)
 
 add_executable(tsh ${TSH_SOURCE_FILES})
 target_include_directories(tsh PRIVATE lib external)
