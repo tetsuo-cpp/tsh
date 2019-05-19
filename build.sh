@@ -7,7 +7,7 @@ fi
 
 # Default build type is debug.
 build_type=$1
-if [ -z $build_type ]; then
+if [ -z "$build_type" ]; then
     build_type="debug"
 fi
 
@@ -36,12 +36,12 @@ case $build_type in
         exit 1
 esac
 
-cd build/
+cd build/ || exit
 if [ ! -d $build_type ]; then
     mkdir $build_type
 fi
 
-cd $build_type
+cd $build_type || exit
 
 # Execute build cmd.
-eval $cmd
+eval "$cmd"
