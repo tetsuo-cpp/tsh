@@ -29,7 +29,13 @@ static const char *SelectDuration =
     "WHERE cmd_name = '%s' "
     "GROUP BY cmd_name;";
 
-static int tshDataBaseSQLiteCallback(void *, int, char **, char **);
+static const char *SelectHistory = "SELECT cmd_name "
+                                   "FROM tsh_stats "
+                                   "ORDER by ROWID desc "
+                                   "LIMIT %ld;";
+
+static int tshDataBaseDurationCallback(void *, int, char **, char **);
+static int tshDataBaseHistoryCallback(void *, int, char **, char **);
 static bool tshDataBaseQueryDurations(TshDataBase *, const char *);
 static void tshStatsDataInit(TshStatsData *);
 static void tshStatsDataDestroy(TshStatsData *);
@@ -70,6 +76,33 @@ bool tshDataBaseGetDuration(TshDataBase *D, const char *CmdName) {
   return tshDataBaseQueryDurations(D, Query);
 }
 
+bool tshDataBaseGetHistory(TshDataBase *D, long int NumResults) {
+  if (NumResults <= 0)
+    return false;
+
+  if (D->Clear) {
+    for (KV_FOREACH(Index, D->Data))
+      tshStatsDataDestroy(&kv_A(D->Data, Index));
+
+    kv_destroy(D->Data);
+  }
+
+  D->Clear = true;
+  kv_init(D->Data);
+
+  char Query[TSH_DB_QUERY_SIZE];
+  snprintf(Query, sizeof(Query), SelectHistory, NumResults);
+  char *ErrorMsg;
+  if (sqlite3_exec(D->DB, Query, tshDataBaseHistoryCallback, D, &ErrorMsg) !=
+      0) {
+    fprintf(stderr, "tsh: failed to get history. Msg=%s\n", ErrorMsg);
+    sqlite3_free(ErrorMsg);
+    return false;
+  }
+
+  return true;
+}
+
 void tshDataBaseDestroy(TshDataBase *D) {
   sqlite3_close(D->DB);
   if (D->Clear) {
@@ -81,8 +114,8 @@ void tshDataBaseDestroy(TshDataBase *D) {
   }
 }
 
-static int tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
-                                     char **ColumnNames) {
+static int tshDataBaseDurationCallback(void *CallbackArg, int ArgC, char **ArgV,
+                                       char **ColumnNames) {
   TshDataBase *D = (TshDataBase *)CallbackArg;
 
   TshStatsData Stats;
@@ -90,7 +123,8 @@ static int tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
 
   if (ArgC != 2) {
     fprintf(stderr,
-            "tsh: received wrong number of columns from db. NumColumns=%d\n",
+            "tsh: received wrong number of duration columns from db. "
+            "NumColumns=%d\n",
             ArgC);
     return -1;
   }
@@ -128,6 +162,35 @@ static int tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
   return 0;
 }
 
+static int tshDataBaseHistoryCallback(void *CallbackArg, int ArgC, char **ArgV,
+                                      char **ColumnNames) {
+  TshDataBase *D = (TshDataBase *)CallbackArg;
+
+  TshStatsData Stats;
+  tshStatsDataInit(&Stats);
+
+  if (ArgC != 1) {
+    fprintf(stderr,
+            "tsh: received wrong number of history columns from db. "
+            "NumColumns=%d\n",
+            ArgC);
+    return -1;
+  }
+
+  if (strcmp("cmd_name", ColumnNames[0]) != 0) {
+    fprintf(stderr, "tsh: received unrecognised fieldname from db. Field=%s\n",
+            ColumnNames[0]);
+    tshStatsDataDestroy(&Stats);
+    return -1;
+  }
+
+  Stats.CmdName = malloc(sizeof(char) * (strlen(ArgV[0]) + 1));
+  strcpy(Stats.CmdName, ArgV[0]);
+
+  kv_push(TshStatsData, D->Data, Stats);
+  return 0;
+}
+
 static bool tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
   if (D->Clear) {
     for (KV_FOREACH(Index, D->Data))
@@ -140,7 +203,7 @@ static bool tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
   kv_init(D->Data);
 
   char *ErrorMsg;
-  if (sqlite3_exec(D->DB, Query, tshDataBaseSQLiteCallback, D, &ErrorMsg) !=
+  if (sqlite3_exec(D->DB, Query, tshDataBaseDurationCallback, D, &ErrorMsg) !=
       0) {
     fprintf(stderr, "tsh: failed to get durations. Msg=%s\n", ErrorMsg);
     sqlite3_free(ErrorMsg);

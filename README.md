@@ -11,6 +11,7 @@ This is a toy shell I wrote to become more familar with C.
 * More granular I/O redirection (choosing between stdout and stderr).
 * More operators.
 * Shell history.
+* Job control.
 * Make less buggy.
 ## Dependencies
 * CMake.

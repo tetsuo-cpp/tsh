@@ -3,6 +3,7 @@
 #include <DataBase.h>
 #include <Util.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,6 +12,7 @@ static int tshBuiltInCd(TshEngine *, TshCmd *);
 static int tshBuiltInHelp(TshEngine *, TshCmd *);
 static int tshBuiltInExit(TshEngine *, TshCmd *);
 static int tshBuiltInStats(TshEngine *, TshCmd *);
+static int tshBuiltInHistory(TshEngine *, TshCmd *);
 
 #define TSH_BUILTIN_REGISTER(BuiltInString, BuiltIn)                           \
   if (strcmp(kv_A(Cmd->Args, 0), BuiltInString) == 0) {                        \
@@ -23,6 +25,7 @@ bool tshBuiltInExec(TshEngine *E, TshCmd *Cmd, int *Status) {
   TSH_BUILTIN_REGISTER("help", tshBuiltInHelp);
   TSH_BUILTIN_REGISTER("exit", tshBuiltInExit);
   TSH_BUILTIN_REGISTER("tshstats", tshBuiltInStats);
+  TSH_BUILTIN_REGISTER("history", tshBuiltInHistory);
 
   return false;
 }
@@ -90,6 +93,41 @@ static int tshBuiltInStats(TshEngine *E, TshCmd *Cmd) {
   for (KV_FOREACH(Index, E->DB->Data)) {
     TshStatsData *S = &kv_A(E->DB->Data, Index);
     printf("%-20s%20s secs\n", S->CmdName, S->Duration);
+  }
+
+  return 0;
+}
+
+static int tshBuiltInHistory(TshEngine *E, TshCmd *Cmd) {
+  long int NumEntries;
+  if (kv_size(Cmd->Args) == 1)
+    NumEntries = 10;
+  else if (kv_size(Cmd->Args) == 2) {
+    char *NumEntriesStr = kv_A(Cmd->Args, 1);
+    char *EndPtr;
+    errno = 0;
+    NumEntries = strtol(NumEntriesStr, &EndPtr, 10);
+    if (errno != 0 || NumEntriesStr == EndPtr) {
+      fprintf(stderr, "tsh: bad number conversion. Number=%s\n", NumEntriesStr);
+      return -1;
+    }
+  } else {
+    fprintf(stderr, "tsh: incorrect number of arguments to history. "
+                    "Expected=\"history [NUM:10]\"\n");
+    return -1;
+  }
+
+  if (!tshDataBaseGetHistory(E->DB, NumEntries))
+    return -1;
+
+  if (kv_size(E->DB->Data) == 0)
+    printf("No results found.\n");
+
+  printf("Printing the last %ld commands.\n", NumEntries);
+
+  for (KV_FOREACH(Index, E->DB->Data)) {
+    TshStatsData *S = &kv_A(E->DB->Data, Index);
+    printf("%s\n", S->CmdName);
   }
 
   return 0;
