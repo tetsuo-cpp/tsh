@@ -22,3 +22,11 @@ static inline double tshTimeDiff(struct timespec *StartTime,
   Diff += (EndTime->tv_nsec - StartTime->tv_nsec) / 1000000000.0;
   return Diff;
 }
+
+#ifndef NDEBUG
+#define TSH_DBG_PRINTF(format, ...) printf(format, ##__VA_ARGS__)
+#else
+#define TSH_DBG_PRINTF(format, ...)                                            \
+  do {                                                                         \
+  } while (0)
+#endif

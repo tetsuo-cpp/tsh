@@ -7,10 +7,10 @@
 #include <string.h>
 #include <unistd.h>
 
-static int _tshBuiltInCd(TshEngine *, TshCmd *);
-static int _tshBuiltInHelp(TshEngine *, TshCmd *);
-static int _tshBuiltInExit(TshEngine *, TshCmd *);
-static int _tshBuiltInStats(TshEngine *, TshCmd *);
+static int tshBuiltInCd(TshEngine *, TshCmd *);
+static int tshBuiltInHelp(TshEngine *, TshCmd *);
+static int tshBuiltInExit(TshEngine *, TshCmd *);
+static int tshBuiltInStats(TshEngine *, TshCmd *);
 
 #define TSH_BUILTIN_REGISTER(BuiltInString, BuiltIn)                           \
   if (strcmp(kv_A(Cmd->Args, 0), BuiltInString) == 0) {                        \
@@ -19,15 +19,15 @@ static int _tshBuiltInStats(TshEngine *, TshCmd *);
   }
 
 bool tshBuiltInExec(TshEngine *E, TshCmd *Cmd, int *Status) {
-  TSH_BUILTIN_REGISTER("cd", _tshBuiltInCd);
-  TSH_BUILTIN_REGISTER("help", _tshBuiltInHelp);
-  TSH_BUILTIN_REGISTER("exit", _tshBuiltInExit);
-  TSH_BUILTIN_REGISTER("tshstats", _tshBuiltInStats);
+  TSH_BUILTIN_REGISTER("cd", tshBuiltInCd);
+  TSH_BUILTIN_REGISTER("help", tshBuiltInHelp);
+  TSH_BUILTIN_REGISTER("exit", tshBuiltInExit);
+  TSH_BUILTIN_REGISTER("tshstats", tshBuiltInStats);
 
   return false;
 }
 
-static int _tshBuiltInCd(TshEngine *E, TshCmd *Cmd) {
+static int tshBuiltInCd(TshEngine *E, TshCmd *Cmd) {
   (void)E;
   if (kv_size(Cmd->Args) != 2) {
     fprintf(stderr,
@@ -38,7 +38,7 @@ static int _tshBuiltInCd(TshEngine *E, TshCmd *Cmd) {
   return chdir(kv_A(Cmd->Args, 1));
 }
 
-static int _tshBuiltInHelp(TshEngine *E, TshCmd *Cmd) {
+static int tshBuiltInHelp(TshEngine *E, TshCmd *Cmd) {
   (void)E;
   if (kv_size(Cmd->Args) != 1) {
     fprintf(stderr,
@@ -53,7 +53,7 @@ static int _tshBuiltInHelp(TshEngine *E, TshCmd *Cmd) {
   return 0;
 }
 
-static int _tshBuiltInExit(TshEngine *E, TshCmd *Cmd) {
+static int tshBuiltInExit(TshEngine *E, TshCmd *Cmd) {
   if (kv_size(Cmd->Args) != 1) {
     fprintf(stderr,
             "tsh: incorrect number of args to exit. Expected=\"exit\"\n");
@@ -64,7 +64,7 @@ static int _tshBuiltInExit(TshEngine *E, TshCmd *Cmd) {
   return 0;
 }
 
-static int _tshBuiltInStats(TshEngine *E, TshCmd *Cmd) {
+static int tshBuiltInStats(TshEngine *E, TshCmd *Cmd) {
   if (kv_size(Cmd->Args) == 1) {
     if (!tshDataBaseGetTopDurations(E->DB))
       return -1;

@@ -9,13 +9,13 @@
 
 #define TSH_BUF_INCREMENT 1024
 
-static int _tshEngineExecImpl(TshEngine *, TshCmd *, bool);
-static int _tshEngineExecCmd(TshEngine *, TshCmd *, bool);
-static int _tshEngineExecPipe(TshEngine *, TshCmd *, bool);
-static int _tshEngineExecRedir(TshEngine *, TshCmd *, bool);
-static int _tshEngineExecReverseRedir(TshEngine *, TshCmd *, bool);
-static void _tshEngineChildExec(TshCmd *, int, int, bool);
-static int _tshEngineParentExec(TshCmd *, int, int, bool, pid_t);
+static int tshEngineExecImpl(TshEngine *, TshCmd *, bool);
+static int tshEngineExecCmd(TshEngine *, TshCmd *, bool);
+static int tshEngineExecPipe(TshEngine *, TshCmd *, bool);
+static int tshEngineExecRedir(TshEngine *, TshCmd *, bool);
+static int tshEngineExecReverseRedir(TshEngine *, TshCmd *, bool);
+static void tshEngineChildExec(TshCmd *, int, int, bool);
+static int tshEngineParentExec(TshCmd *, int, int, bool, pid_t);
 
 void tshEngineInit(TshEngine *E, TshDataBase *DB) {
   E->Status = 0;
@@ -24,35 +24,35 @@ void tshEngineInit(TshEngine *E, TshDataBase *DB) {
 }
 
 void tshEngineExec(TshEngine *E, TshCmd *Cmd) {
-  E->Status = _tshEngineExecImpl(E, Cmd, true);
+  E->Status = tshEngineExecImpl(E, Cmd, true);
 }
 
-static int _tshEngineExecImpl(TshEngine *E, TshCmd *Cmd, bool Interactive) {
+static int tshEngineExecImpl(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   switch (Cmd->Op) {
   case TK_None:
-    return _tshEngineExecCmd(E, Cmd, Interactive);
+    return tshEngineExecCmd(E, Cmd, Interactive);
   case TK_Pipe:
-    return _tshEngineExecPipe(E, Cmd, Interactive);
+    return tshEngineExecPipe(E, Cmd, Interactive);
   case TK_Redir:
-    return _tshEngineExecRedir(E, Cmd, Interactive);
+    return tshEngineExecRedir(E, Cmd, Interactive);
   case TK_ReverseRedir:
-    return _tshEngineExecReverseRedir(E, Cmd, Interactive);
+    return tshEngineExecReverseRedir(E, Cmd, Interactive);
   default:
     return -1;
   }
 }
 
-static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
+static int tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
 #ifndef NDEBUG
-  printf("tsh: executing cmd. Cmd=%s Interactive=%d Args=[", kv_A(Cmd->Args, 0),
-         Interactive);
+  TSH_DBG_PRINTF("tsh: executing cmd. Cmd=%s Interactive=%d Args=[",
+                 kv_A(Cmd->Args, 0), Interactive);
   for (KV_FOREACH(Index, Cmd->Args)) {
     if (Index == 0)
       continue;
     if (Index != 1)
-      printf(", ");
+      TSH_DBG_PRINTF(", ");
 
-    printf("%s", kv_A(Cmd->Args, Index));
+    TSH_DBG_PRINTF("%s", kv_A(Cmd->Args, Index));
   }
 
   printf("]\n");
@@ -79,7 +79,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
     close(CmdRead[0]);
     close(CmdWrite[1]);
 
-    _tshEngineChildExec(Cmd, CmdWrite[0], CmdRead[1], Interactive);
+    tshEngineChildExec(Cmd, CmdWrite[0], CmdRead[1], Interactive);
 
     exit(EXIT_FAILURE);
   } else {
@@ -92,7 +92,7 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
       return -1;
 
     Status =
-        _tshEngineParentExec(Cmd, CmdRead[0], CmdWrite[1], Interactive, Pid);
+        tshEngineParentExec(Cmd, CmdRead[0], CmdWrite[1], Interactive, Pid);
 
     if (clock_gettime(CLOCK_REALTIME, &EndTime))
       return -1;
@@ -104,15 +104,13 @@ static int _tshEngineExecCmd(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   }
 }
 
-static int _tshEngineExecPipe(TshEngine *E, TshCmd *Cmd, bool Interactive) {
-#ifndef NDEBUG
-  printf("tsh: executing pipe.\n");
-#endif
+static int tshEngineExecPipe(TshEngine *E, TshCmd *Cmd, bool Interactive) {
+  TSH_DBG_PRINTF("tsh: executing pipe.\n");
 
   Cmd->Left->In = Cmd->In;
   Cmd->Left->InSize = Cmd->InSize;
 
-  TSH_RET(_tshEngineExecImpl(E, Cmd->Left, false));
+  TSH_RET(tshEngineExecImpl(E, Cmd->Left, false));
 
   if (!Cmd->Left->Out)
     return -1;
@@ -121,20 +119,18 @@ static int _tshEngineExecPipe(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   Cmd->Right->In = Cmd->Left->Out;
   Cmd->Right->InSize = Cmd->Left->OutSize;
 
-  TSH_RET(_tshEngineExecImpl(E, Cmd->Right, Interactive));
+  TSH_RET(tshEngineExecImpl(E, Cmd->Right, Interactive));
   return 0;
 }
 
-static int _tshEngineExecRedir(TshEngine *E, TshCmd *Cmd, bool Interactive) {
+static int tshEngineExecRedir(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   (void)Interactive;
-#ifndef NDEBUG
-  printf("tsh: executing redir.\n");
-#endif
+  TSH_DBG_PRINTF("tsh: executing redir.\n");
 
   Cmd->Left->In = Cmd->In;
   Cmd->Left->InSize = Cmd->InSize;
 
-  TSH_RET(_tshEngineExecImpl(E, Cmd->Left, false));
+  TSH_RET(tshEngineExecImpl(E, Cmd->Left, false));
 
   if (kv_size(Cmd->Right->Args) != 1)
     return -1;
@@ -152,11 +148,9 @@ static int _tshEngineExecRedir(TshEngine *E, TshCmd *Cmd, bool Interactive) {
   return 0;
 }
 
-static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Cmd,
-                                      bool Interactive) {
-#ifndef NDEBUG
-  printf("tsh: executing reverse redir.\n");
-#endif
+static int tshEngineExecReverseRedir(TshEngine *E, TshCmd *Cmd,
+                                     bool Interactive) {
+  TSH_DBG_PRINTF("tsh: executing reverse redir.\n");
 
   if (kv_size(Cmd->Right->Args) != 1)
     return -1;
@@ -189,12 +183,11 @@ static int _tshEngineExecReverseRedir(TshEngine *E, TshCmd *Cmd,
   Cmd->Left->In = Buf;
   Cmd->Left->InSize = Length;
 
-  TSH_RET(_tshEngineExecImpl(E, Cmd->Left, Interactive));
+  TSH_RET(tshEngineExecImpl(E, Cmd->Left, Interactive));
   return 0;
 }
 
-void _tshEngineChildExec(TshCmd *Cmd, int Reader, int Writer,
-                         bool Interactive) {
+void tshEngineChildExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive) {
   // Close reader.
   if (Cmd->In)
     dup2(Reader, STDIN_FILENO);
@@ -214,8 +207,8 @@ void _tshEngineChildExec(TshCmd *Cmd, int Reader, int Writer,
     perror("tsh");
 }
 
-int _tshEngineParentExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive,
-                         pid_t Pid) {
+int tshEngineParentExec(TshCmd *Cmd, int Reader, int Writer, bool Interactive,
+                        pid_t Pid) {
   // If we have some stdin value to pipe into the current cmd.
   if (Cmd->In)
     write(Writer, Cmd->In, Cmd->InSize);

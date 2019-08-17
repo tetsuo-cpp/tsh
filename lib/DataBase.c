@@ -29,10 +29,10 @@ static const char *SelectDuration =
     "WHERE cmd_name = '%s' "
     "GROUP BY cmd_name;";
 
-static int _tshDataBaseSQLiteCallback(void *, int, char **, char **);
-static bool _tshDataBaseQueryDurations(TshDataBase *, const char *);
-static void _tshStatsDataInit(TshStatsData *);
-static void _tshStatsDataDestroy(TshStatsData *);
+static int tshDataBaseSQLiteCallback(void *, int, char **, char **);
+static bool tshDataBaseQueryDurations(TshDataBase *, const char *);
+static void tshStatsDataInit(TshStatsData *);
+static void tshStatsDataDestroy(TshStatsData *);
 
 bool tshDataBaseInit(TshDataBase *D, const char *Name) {
   if (sqlite3_open(Name, &D->DB) != 0) {
@@ -54,41 +54,39 @@ void tshDataBaseRecordDuration(TshDataBase *D, const char *CmdName,
   char Query[TSH_DB_QUERY_SIZE];
   snprintf(Query, sizeof(Query), InsertDuration, CmdName, Duration);
 
-#ifndef NDEBUG
-  printf("tsh: inserting duration data. Query=\"%s\"\n", Query);
-#endif
+  TSH_DBG_PRINTF("tsh: inserting duration data. Query=\"%s\"\n", Query);
 
   if (sqlite3_exec(D->DB, Query, NULL, NULL, NULL) != 0)
     fprintf(stderr, "tsh: failed to insert duration data.\n");
 }
 
 bool tshDataBaseGetTopDurations(TshDataBase *D) {
-  return _tshDataBaseQueryDurations(D, SelectTopDurations);
+  return tshDataBaseQueryDurations(D, SelectTopDurations);
 }
 
 bool tshDataBaseGetDuration(TshDataBase *D, const char *CmdName) {
   char Query[TSH_DB_QUERY_SIZE];
   snprintf(Query, sizeof(Query), SelectDuration, CmdName);
-  return _tshDataBaseQueryDurations(D, Query);
+  return tshDataBaseQueryDurations(D, Query);
 }
 
 void tshDataBaseDestroy(TshDataBase *D) {
   sqlite3_close(D->DB);
   if (D->Clear) {
     for (KV_FOREACH(Index, D->Data))
-      _tshStatsDataDestroy(&kv_A(D->Data, Index));
+      tshStatsDataDestroy(&kv_A(D->Data, Index));
 
     kv_destroy(D->Data);
     D->Clear = false;
   }
 }
 
-static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
-                                      char **ColumnNames) {
+static int tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
+                                     char **ColumnNames) {
   TshDataBase *D = (TshDataBase *)CallbackArg;
 
   TshStatsData Stats;
-  _tshStatsDataInit(&Stats);
+  tshStatsDataInit(&Stats);
 
   if (ArgC != 2) {
     fprintf(stderr,
@@ -101,7 +99,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
     if (strcmp("cmd_name", ColumnNames[Index]) == 0) {
       if (Stats.CmdName) {
         fprintf(stderr, "tsh: received duplicate \"cmd_name\" field.");
-        _tshStatsDataDestroy(&Stats);
+        tshStatsDataDestroy(&Stats);
         return -1;
       }
 
@@ -110,7 +108,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
     } else if (strcmp("duration", ColumnNames[Index]) == 0) {
       if (Stats.Duration) {
         fprintf(stderr, "tsh: received duplicate \"duration\" field.");
-        _tshStatsDataDestroy(&Stats);
+        tshStatsDataDestroy(&Stats);
         return -1;
       }
 
@@ -121,7 +119,7 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
               "tsh: received unrecognised fieldname from db. Field=%s\n",
               ColumnNames[Index]);
 
-      _tshStatsDataDestroy(&Stats);
+      tshStatsDataDestroy(&Stats);
       return -1;
     }
   }
@@ -130,10 +128,10 @@ static int _tshDataBaseSQLiteCallback(void *CallbackArg, int ArgC, char **ArgV,
   return 0;
 }
 
-static bool _tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
+static bool tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
   if (D->Clear) {
     for (KV_FOREACH(Index, D->Data))
-      _tshStatsDataDestroy(&kv_A(D->Data, Index));
+      tshStatsDataDestroy(&kv_A(D->Data, Index));
 
     kv_destroy(D->Data);
   }
@@ -142,7 +140,7 @@ static bool _tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
   kv_init(D->Data);
 
   char *ErrorMsg;
-  if (sqlite3_exec(D->DB, Query, _tshDataBaseSQLiteCallback, D, &ErrorMsg) !=
+  if (sqlite3_exec(D->DB, Query, tshDataBaseSQLiteCallback, D, &ErrorMsg) !=
       0) {
     fprintf(stderr, "tsh: failed to get durations. Msg=%s\n", ErrorMsg);
     sqlite3_free(ErrorMsg);
@@ -152,12 +150,12 @@ static bool _tshDataBaseQueryDurations(TshDataBase *D, const char *Query) {
   return true;
 }
 
-static void _tshStatsDataInit(TshStatsData *S) {
+static void tshStatsDataInit(TshStatsData *S) {
   S->CmdName = NULL;
   S->Duration = NULL;
 }
 
-static void _tshStatsDataDestroy(TshStatsData *S) {
+static void tshStatsDataDestroy(TshStatsData *S) {
   if (S->CmdName) {
     free(S->CmdName);
     S->CmdName = NULL;

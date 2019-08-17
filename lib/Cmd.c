@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool _tshCmdAddEnvVar(TshCmd *, const char *, size_t);
+static bool tshCmdAddEnvVar(TshCmd *, const char *, size_t);
 
 void tshCmdInit(TshCmd *C) {
   kv_init(C->Args);
@@ -22,7 +22,7 @@ void tshCmdInit(TshCmd *C) {
 
 void tshCmdAddArg(TshCmd *C, const char *Buf, size_t BufSize) {
   // Environment variable.
-  if (_tshCmdAddEnvVar(C, Buf, BufSize))
+  if (tshCmdAddEnvVar(C, Buf, BufSize))
     return;
 
   char *Arg = malloc(sizeof(char) * (BufSize + 1));
@@ -56,7 +56,7 @@ void tshCmdDestroy(TshCmd *C) {
   free(C);
 }
 
-static bool _tshCmdAddEnvVar(TshCmd *C, const char *Buf, size_t BufSize) {
+static bool tshCmdAddEnvVar(TshCmd *C, const char *Buf, size_t BufSize) {
   if (Buf[0] != '$')
     return false;
 

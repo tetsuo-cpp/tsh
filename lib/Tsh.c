@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void _tshRunInput(TshEngine *, const char *);
+static void tshRunInput(TshEngine *, const char *);
 
 const char *TshDBName = "/tmp/tsh.db";
 
@@ -31,7 +31,7 @@ int tsh(int ArgC, char **ArgV) {
   }
   // If we have a single argument then execute it and exit.
   else if (ArgC == 2) {
-    _tshRunInput(&E, ArgV[1]);
+    tshRunInput(&E, ArgV[1]);
     tshDataBaseDestroy(&DB);
     return E.Status;
   }
@@ -43,7 +43,7 @@ int tsh(int ArgC, char **ArgV) {
     if (!Buf)
       break;
 
-    _tshRunInput(&E, Buf);
+    tshRunInput(&E, Buf);
     free(Buf);
   }
 
@@ -52,7 +52,7 @@ int tsh(int ArgC, char **ArgV) {
   return EXIT_SUCCESS;
 }
 
-static void _tshRunInput(TshEngine *E, const char *Buf) {
+static void tshRunInput(TshEngine *E, const char *Buf) {
   size_t BufSize = strlen(Buf);
 
   TshLex L;
@@ -74,11 +74,11 @@ static void _tshRunInput(TshEngine *E, const char *Buf) {
 #ifndef NDEBUG
   for (KV_FOREACH(Index, Tokens)) {
     TshToken *T = &kv_A(Tokens, Index);
-    printf("tsh: read token. Kind=%d ", T->Kind);
+    TSH_DBG_PRINTF("tsh: read token. Kind=%d ", T->Kind);
     if (T->Kind == TK_Identifier)
-      printf("Value=%.*s\n", (int)T->BufSize, T->Buf);
+      TSH_DBG_PRINTF("Value=%.*s\n", (int)T->BufSize, T->Buf);
     else
-      printf("Value=%s\n", tshTokenKindToString(T->Kind));
+      TSH_DBG_PRINTF("Value=%s\n", tshTokenKindToString(T->Kind));
   }
 #endif
 
