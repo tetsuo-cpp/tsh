@@ -20,10 +20,15 @@ void tshLexInit(TshLex *L, const char *Buf, size_t BufSize) {
 void tshLexGetToken(TshLex *L, TshToken *T) {
   T->Buf = NULL;
   T->BufSize = 0;
-  while (isspace(L->CurChar) && tshLexGetChar(L)) {
+  if (!L->Buf || L->CurPos >= L->BufSize) {
+    T->Kind = TK_EndOfFile;
+    return;
   }
 
-  if (!L->Buf || L->CurPos >= L->BufSize) {
+  while (isspace(L->CurChar) && tshLexGetChar(L))
+    ;
+
+  if (isspace(L->CurChar)) {
     T->Kind = TK_EndOfFile;
     return;
   }

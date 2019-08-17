@@ -4,13 +4,13 @@ This is a toy shell I wrote to become more familar with C.
 * Interactive commands (less, vi, etc).
 * Piping.
 * I/O redirection.
-* Environment variables.
+* Using environment variables as args.
 * Records command duration with SQLite (because why not).
+* Shell history.
 ## Improvements
 * File globbing.
 * More granular I/O redirection (choosing between stdout and stderr).
 * More operators.
-* Shell history.
 * Job control.
 * Make less buggy.
 ## Dependencies
@@ -50,3 +50,4 @@ UBSAN_OPTIONS="print_stacktrace=1" build/ubsan/tsh
 * ```help```: Display help text.
 * ```exit```: Exit the shell.
 * ```tshstats```: Display command duration information (backed by SQLite).
+* ```history```: Display the shell history (backed by SQLite).
